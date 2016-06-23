@@ -2,24 +2,39 @@
 
 [![Build Status](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt.svg?branch=master)](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt)
 
-## Graph API
-
 This project allows the use of the [Apache Tinkerpop](http://tinkerpop.apache.org/) Java API with the [neo4j server](http://neo4j.com/) using the [BOLT](https://github.com/neo4j/neo4j-java-driver) protocol.
-
 
 ## Usage
 
 Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to your project:
 
-    <dependencies>
-        <dependency>
-            <groupId>com.steelbridgelabs.oss</groupId>
-            <artifactId>neo4j-gremlin-bolt</artifactId>
-            <version>x.y.z</version>
-        </dependency>
-    </dependencies>
+### Maven
 
-*Please check the [Releases](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/releases) for the version available.
+```xml
+  <dependency>
+      <groupId>com.steelbridgelabs.oss</groupId>
+      <artifactId>neo4j-gremlin-bolt</artifactId>
+      <version>{version}</version>
+  </dependency>
+```
+
+### Gradle
+
+```xml
+    dependencies {
+        compile 'com.steelbridgelabs.oss:neo4j-gremlin-bolt:{version}'
+    }
+```
+
+### Ivy
+
+```xml
+    <dependency org="com.steelbridgelabs.oss" name="neo4j-gremlin-bolt" rev="{version}"/>
+```
+
+*Please check the [Releases](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/releases) for the latest version available.
+
+# Graph API
 
 ## Working with Vertices and Edges
 
