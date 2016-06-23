@@ -4,7 +4,22 @@
 
 ## Graph API
 
-This project allows the use of the [Apache Tinkerpop](http://tinkerpop.apache.org/) Java API with the [neo4j server](http://neo4j.com/).
+This project allows the use of the [Apache Tinkerpop](http://tinkerpop.apache.org/) Java API with the [neo4j server](http://neo4j.com/) using the [BOLT](https://github.com/neo4j/neo4j-java-driver) protocol.
+
+
+## Usage
+
+Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to your project:
+
+    <dependencies>
+        <dependency>
+            <groupId>com.steelbridgelabs.oss</groupId>
+            <artifactId>neo4j-gremlin-bolt</artifactId>
+            <version>x.y.z</version>
+        </dependency>
+    </dependencies>
+
+*Please check the [Releases](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/releases) for the version available.
 
 ## Working with Vertices and Edges
 
@@ -17,7 +32,7 @@ Create a new [Vertex](http://tinkerpop.apache.org/javadocs/current/core/org/apac
   Vertex vertex = graph.addVertex();
 ```
 
-Create a new [Vertex](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Vertex.html) in the current `graph` with some property values: 
+Create a new [Vertex](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Vertex.html) in the current `graph` with property values: 
 
 ```java
   // create a vertex in current graph with property values
