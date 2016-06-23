@@ -21,6 +21,7 @@ package com.steelbridgelabs.oss.neo4j.structure;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -51,6 +52,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * @author Rogelio J. Baucells
+ */
 class Neo4JSession {
 
     private static final Logger logger = LoggerFactory.getLogger(Neo4JSession.class);
@@ -89,7 +93,7 @@ class Neo4JSession {
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
         // log information
         if (logger.isDebugEnabled())
-            logger.debug("Creating session: {}", session.hashCode());
+            logger.debug("Creating session [{}]", session.hashCode());
         // store fields
         this.graph = graph;
         this.session = session;
@@ -105,6 +109,9 @@ class Neo4JSession {
         // check we have a transaction already in progress
         if (transaction != null)
             throw Transaction.Exceptions.transactionAlreadyOpen();
+        // log information
+        if (logger.isDebugEnabled())
+            logger.debug("Beginning transaction on session [{}]", session.hashCode());
         // begin transaction
         transaction = session.beginTransaction();
         // return transaction instance
@@ -139,6 +146,8 @@ class Neo4JSession {
         Objects.requireNonNull(out, "out cannot be null");
         Objects.requireNonNull(in, "in cannot be null");
         Objects.requireNonNull(keyValues, "keyValues cannot be null");
+        // validate label
+        ElementHelper.validateLabel(label);
         // verify parameters are key/value pairs
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         // id cannot be present
@@ -165,6 +174,8 @@ class Neo4JSession {
 
     public Iterator<Vertex> vertices(Object[] ids) {
         Objects.requireNonNull(ids, "ids cannot be null");
+        // verify identifiers
+        verifyIdentifiers(Vertex.class, ids);
         // check we have all vertices already loaded
         if (!verticesLoaded) {
             // check ids
@@ -185,14 +196,12 @@ class Neo4JSession {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), Stream.empty());
             }
-            // ids in memory (only ids that might exist on server)
-            List<Object> filter = vertices.values().stream().filter(vertex -> !transientVertices.contains(vertex)).map(Neo4JVertex::id).collect(Collectors.toList());
-            // cypher statement for all vertices not in memory
-            Statement statement = filter.isEmpty() ? new Statement("MATCH (n) RETURN n") : new Statement(String.format(Locale.US, "MATCH (n) WHERE not n.%s in {ids} RETURN n", vertexIdFieldName), Values.parameters("ids", filter));
+            // cypher statement for all vertices
+            Statement statement = new Statement("MATCH (n) RETURN n");
             // create stream from query
             Stream<Vertex> query = vertices(statement);
-            // create stream from memory and query result
-            Iterator<Vertex> iterator = combine(vertices.values().stream().map(vertex -> (Vertex)vertex), query);
+            // combine stream from memory (transient) and query result
+            Iterator<Vertex> iterator = combine(transientVertices.stream().map(vertex -> (Vertex)vertex), query);
             // it is safe to update loaded flag at this time
             verticesLoaded = true;
             // return iterator
@@ -206,6 +215,7 @@ class Neo4JSession {
             return identifiers.stream()
                 .filter(vertices::containsKey)
                 .map(id -> (Vertex)vertices.get(id))
+                .collect(Collectors.toCollection(LinkedList::new))
                 .iterator();
         }
         // no need to execute query, only items in memory
@@ -227,6 +237,8 @@ class Neo4JSession {
 
     public Iterator<Edge> edges(Object[] ids) {
         Objects.requireNonNull(ids, "ids cannot be null");
+        // verify identifiers
+        verifyIdentifiers(Edge.class, ids);
         // check we have all edges already loaded
         if (!edgesLoaded) {
             // check ids
@@ -247,14 +259,12 @@ class Neo4JSession {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
             }
-            // ids in memory (only ids that might exist on server)
-            List<Object> filter = edges.values().stream().filter(edge -> !transientEdges.contains(edge)).map(Neo4JEdge::id).collect(Collectors.toList());
-            // cypher statement for all edges not in memory
-            Statement statement = filter.isEmpty() ? new Statement("MATCH (n)-[r]->(m) RETURN n, r, m") : new Statement(String.format(Locale.US, "MATCH (n)-[r]->(m) WHERE not r.%s in {ids} RETURN n, r, m", edgeIdFieldName), Values.parameters("ids", filter));
+            // cypher statement for all edges in database
+            Statement statement = new Statement("MATCH (n)-[r]->(m) RETURN n, r, m");
             // find edges
             Stream<Edge> query = edges(statement);
-            // create stream from memory and query result
-            Iterator<Edge> iterator = combine(edges.values().stream().map(edge -> (Edge)edge), query);
+            // combine stream from memory (transient) and query result
+            Iterator<Edge> iterator = combine(transientEdges.stream().map(edge -> (Edge)edge), query);
             // it is safe to update loaded flag at this time
             edgesLoaded = true;
             // return iterator
@@ -268,6 +278,7 @@ class Neo4JSession {
             return identifiers.stream()
                 .filter(edges::containsKey)
                 .map(id -> (Edge)edges.get(id))
+                .collect(Collectors.toCollection(LinkedList::new))
                 .iterator();
         }
         // no need to execute query, only items in memory
@@ -339,6 +350,24 @@ class Neo4JSession {
             relations.put(vertexId, edges);
         }
         edges.add(edge);
+    }
+
+    private static <T> void verifyIdentifiers(Class<T> elementClass, Object... ids) {
+        // check length
+        if (ids.length > 0) {
+            // first element in array
+            Object first = ids[0];
+            // first element class
+            Class<?> firstClass = first.getClass();
+            // check it is an element
+            if (elementClass.isAssignableFrom(firstClass)) {
+                // all ids must be of the same class
+                if (!Stream.of(ids).allMatch(id -> elementClass.isAssignableFrom(id.getClass())))
+                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+            }
+            else if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
+                throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        }
     }
 
     private static Object processIdentifier(Object id) {
@@ -492,7 +521,7 @@ class Neo4JSession {
             try {
                 // log information
                 if (logger.isDebugEnabled())
-                    logger.debug("Committing transaction on session: {}", session.hashCode());
+                    logger.debug("Committing transaction on session [{}]", session.hashCode());
                 // delete edges
                 deleteEdges();
                 // delete vertices
@@ -507,18 +536,18 @@ class Neo4JSession {
                 updateEdges();
                 // log information
                 if (logger.isDebugEnabled())
-                    logger.debug("Successfully committed transaction on session: {}", session.hashCode());
+                    logger.debug("Successfully committed transaction on session [{}]", session.hashCode());
             }
             catch (ClientException ex) {
                 // log error
                 if (logger.isErrorEnabled())
-                    logger.error("Error committing transaction on session: {}", session.hashCode(), ex);
+                    logger.error("Error committing transaction on session [{}]", session.hashCode(), ex);
                 // throw original exception
                 throw ex;
             }
         }
         else if (logger.isDebugEnabled())
-            logger.debug("Rolling back transaction on session: {}", session.hashCode());
+            logger.debug("Rolling back transaction on session [{}]", session.hashCode());
         // clean internal caches
         deletedEdges.clear();
         edgeDeleteQueue.clear();
@@ -537,7 +566,7 @@ class Neo4JSession {
             Statement statement = vertex.insertStatement();
             // log information
             if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
+                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             transaction.run(statement);
         }
@@ -548,11 +577,13 @@ class Neo4JSession {
         for (Neo4JVertex vertex : vertexUpdateQueue) {
             // create statement
             Statement statement = vertex.updateStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
-            // execute statement
-            transaction.run(statement);
+            if (statement != null) {
+                // log information
+                if (logger.isDebugEnabled())
+                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
+                // execute statement
+                transaction.run(statement);
+            }
         }
     }
 
@@ -563,7 +594,7 @@ class Neo4JSession {
             Statement statement = vertex.deleteStatement();
             // log information
             if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
+                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             transaction.run(statement);
         }
@@ -576,7 +607,7 @@ class Neo4JSession {
             Statement statement = edge.insertStatement();
             // log information
             if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
+                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             transaction.run(statement);
         }
@@ -587,11 +618,13 @@ class Neo4JSession {
         for (Neo4JEdge edge : edgeUpdateQueue) {
             // create statement
             Statement statement = edge.updateStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
-            // execute statement
-            transaction.run(statement);
+            if (statement != null) {
+                // log information
+                if (logger.isDebugEnabled())
+                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
+                // execute statement
+                transaction.run(statement);
+            }
         }
     }
 
@@ -602,7 +635,7 @@ class Neo4JSession {
             Statement statement = edge.deleteStatement();
             // log information
             if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
+                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             transaction.run(statement);
         }
@@ -610,11 +643,19 @@ class Neo4JSession {
 
     StatementResult executeStatement(Statement statement) {
         try {
+            // check we have a transaction
+            if (transaction != null) {
+                // log information
+                if (logger.isDebugEnabled())
+                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
+                // execute on transaction
+                return transaction.run(statement);
+            }
             // log information
             if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement [{}]: {}", session.hashCode(), statement.toString());
-            // check we have a transaction
-            return transaction != null ? transaction.run(statement) : session.run(statement);
+                logger.debug("Executing Cypher statement on session [{}]: {}", session.hashCode(), statement.toString());
+            // execute on session
+            return session.run(statement);
         }
         catch (ClientException ex) {
             // log error
@@ -627,8 +668,8 @@ class Neo4JSession {
 
     public void close() {
         // log information
-        if (logger.isInfoEnabled())
-            logger.info("Closing neo4j session [{}]", session.hashCode());
+        if (logger.isDebugEnabled())
+            logger.debug("Closing neo4j session [{}]", session.hashCode());
         // close session
         session.close();
     }
@@ -639,7 +680,8 @@ class Neo4JSession {
         // check session is open
         if (session.isOpen()) {
             // log information
-            logger.error("Finalizing Neo4JSession [{}] without explicit call to close(), the code is leaking sessions!", session.hashCode());
+            if (logger.isErrorEnabled())
+                logger.error("Finalizing Neo4JSession [{}] without explicit call to close(), the code is leaking sessions!", session.hashCode());
         }
         // base implementation
         super.finalize();

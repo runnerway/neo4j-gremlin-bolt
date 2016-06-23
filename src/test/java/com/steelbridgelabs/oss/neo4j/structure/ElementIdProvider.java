@@ -21,9 +21,13 @@ package com.steelbridgelabs.oss.neo4j.structure;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ *
+ * @author Rogelio J. Baucells
+ */
 public class ElementIdProvider implements Neo4JElementIdProvider<Long> {
 
-    public static String IdFieldName = "id";
+    public final static String IdFieldName = "id";
 
     private final AtomicLong atomicLong = new AtomicLong();
 

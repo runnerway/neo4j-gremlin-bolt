@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -44,17 +43,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * @author Rogelio J. Baucells
+ */
 public class Neo4JEdge extends Neo4JElement implements Edge {
 
-    private class Neo4JEdgeProperty<T> implements Property<T> {
+    private static class Neo4JEdgeProperty<T> implements Property<T> {
 
+        private final Neo4JEdge edge;
         private final String name;
         private final T value;
 
-        public Neo4JEdgeProperty(String name, T value) {
+        public Neo4JEdgeProperty(Neo4JEdge edge, String name, T value) {
+            Objects.requireNonNull(edge, "edge cannot be null");
             Objects.requireNonNull(name, "name cannot be null");
             Objects.requireNonNull(value, "value cannot be null");
             // store fields
+            this.edge = edge;
             this.name = name;
             this.value = value;
         }
@@ -76,13 +81,18 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
 
         @Override
         public Element element() {
-            return Neo4JEdge.this;
+            return edge;
         }
 
         @Override
         public void remove() {
-            // remove from vertex
-            Neo4JEdge.this.properties.remove(name);
+            // remove from edge
+            edge.properties.remove(name);
+        }
+
+        @Override
+        public String toString() {
+            return StringFactory.propertyString(this);
         }
     }
 
@@ -94,6 +104,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private final String label;
     private final Neo4JVertex out;
     private final Neo4JVertex in;
+
+    private boolean dirty = false;
 
     Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
@@ -133,7 +145,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
             // value
             Value value = relationship.get(key);
             // add property value
-            properties.put(key, new Neo4JEdgeProperty<>(key, value.asObject()));
+            properties.put(key, new Neo4JEdgeProperty<>(this, key, value.asObject()));
         });
         // vertices
         this.out = out;
@@ -168,14 +180,21 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     }
 
     @Override
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    @Override
     public <V> Property<V> property(String name, V value) {
         ElementHelper.validateProperty(name, value);
         // property value for key
-        Neo4JEdgeProperty<V> propertyValue = new Neo4JEdgeProperty<>(name, value);
+        Neo4JEdgeProperty<V> propertyValue = new Neo4JEdgeProperty<>(this, name, value);
         // update map
         properties.put(name, propertyValue);
         // set edge as dirty
         session.dirtyEdge(this);
+        // update flag
+        dirty = true;
         // return property
         return propertyValue;
     }
@@ -229,33 +248,33 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement insertStatement() {
         // create statement
-        String statement = String.format(Locale.US, "MATCH (o:%s{%s: {oid}}), (i:%s{%s: {iid}}) CREATE (o)-[r:`%s`{ep}]->(i)", Neo4JVertex.processLabels(out.labels()), idFieldName, Neo4JVertex.processLabels(in.labels()), idFieldName, label);
+        String statement = "MATCH " + out.matchClause("o", "oid") + ", " + in.matchClause("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i)";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "ep", statementParameters());
+        // reset flags
+        dirty = false;
         // command statement
         return new Statement(statement, parameters);
     }
 
     @Override
     public Statement updateStatement() {
-        // create statement
-        String statement = String.format(Locale.US, "MATCH (o:%s{%s: {oid}}), (i:%s{%s: {iid}}) MERGE (o)-[r:`%s`{%s: {id}}]->(i) ON MATCH SET r = {rp}", Neo4JVertex.processLabels(out.labels()), idFieldName, Neo4JVertex.processLabels(in.labels()), idFieldName, label, idFieldName);
+        // update statement
+        String statement = "MATCH " + out.matchClause("o", "oid") + ", " + in.matchClause("i", "iid") + " MERGE (o)-[r:`" + label + "`{" + idFieldName + ": {id}}]->(i) ON MATCH SET r = {rp}";
         // parameters
-        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), idFieldName, id, "rp", statementParameters());
+        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
+        // reset flags
+        dirty = false;
         // command statement
         return new Statement(statement, parameters);
     }
 
     @Override
     public Statement deleteStatement() {
-        // create statement
-        String statement = String.format(Locale.US, "MATCH (o:%s{%s: {oid}})-[r:`%s`{%s: {id}}]->(i:%s{%s: {iid}}) DELETE r",
-            Neo4JVertex.processLabels(out.labels()), idFieldName,
-            label,
-            idFieldName,
-            Neo4JVertex.processLabels(in.labels()), idFieldName);
+        // delete statement
+        String statement = "MATCH " + out.matchClause("o", "oid") + "-[r:`" + label + "`{" + idFieldName + ": {id}}]->" + in.matchClause("i", "iid") + " DELETE r";
         // parameters
-        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), idFieldName, id);
+        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id);
         // command statement
         return new Statement(statement, parameters);
     }
