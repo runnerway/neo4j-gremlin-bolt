@@ -42,18 +42,45 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 ## Connecting to the database
 
+- Create driver instance, see [neo4j-java-driver](https://github.com/neo4j/neo4j-java-driver) for more information.
+
 ```java
-    // create driver instance (see [neo4j-java-driver](https://github.com/neo4j/neo4j-java-driver) for more information)
+    // create driver instance
     Driver driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic("neo4j", "neo4j"));
-    ...
+```
+
+- Create id provider instances, see providers for more information. 
+
+```java
     // create id provider instances
     vertexIdProvider = ...
     edgeIdProvider = ...
     propertyIdProvider = ...
-    
+```
+
+- Create [Graph](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Graph.html) instance.
+
+```java
     // create graph instance
     try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider)) {
         
+    }
+```
+
+## Working with transactions
+
+- Obtain a [Transaction](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Transaction.html) instance from current Graph.
+
+```java
+    // create graph instance
+    try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider)) {
+        // begin transaction
+        try (Transaction transaction = graph.tx()) {
+            // use Graph API to create, update and delete Vertices and Edges
+            
+            // commit transaction
+            transaction.commit();
+        }
     }
 ```
 
