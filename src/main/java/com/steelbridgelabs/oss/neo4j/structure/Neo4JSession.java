@@ -196,14 +196,12 @@ class Neo4JSession {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), Stream.empty());
             }
-            // ids in memory (only ids that might exist on server)
-            List<Object> filter = vertices.values().stream().filter(vertex -> !transientVertices.contains(vertex)).map(Neo4JVertex::id).collect(Collectors.toList());
-            // cypher statement for all vertices not in memory
-            Statement statement = filter.isEmpty() ? new Statement("MATCH (n) RETURN n") : new Statement(String.format(Locale.US, "MATCH (n) WHERE not n.%s in {ids} RETURN n", vertexIdFieldName), Values.parameters("ids", filter));
+            // cypher statement for all vertices
+            Statement statement = new Statement("MATCH (n) RETURN n");
             // create stream from query
             Stream<Vertex> query = vertices(statement);
-            // create stream from memory and query result
-            Iterator<Vertex> iterator = combine(vertices.values().stream().map(vertex -> (Vertex)vertex), query);
+            // combine stream from memory (transient) and query result
+            Iterator<Vertex> iterator = combine(transientVertices.stream().map(vertex -> (Vertex)vertex), query);
             // it is safe to update loaded flag at this time
             verticesLoaded = true;
             // return iterator
@@ -217,6 +215,7 @@ class Neo4JSession {
             return identifiers.stream()
                 .filter(vertices::containsKey)
                 .map(id -> (Vertex)vertices.get(id))
+                .collect(Collectors.toCollection(LinkedList::new))
                 .iterator();
         }
         // no need to execute query, only items in memory
@@ -260,14 +259,12 @@ class Neo4JSession {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
             }
-            // ids in memory (only ids that might exist on server)
-            List<Object> filter = edges.values().stream().filter(edge -> !transientEdges.contains(edge)).map(Neo4JEdge::id).collect(Collectors.toList());
-            // cypher statement for all edges not in memory
-            Statement statement = filter.isEmpty() ? new Statement("MATCH (n)-[r]->(m) RETURN n, r, m") : new Statement(String.format(Locale.US, "MATCH (n)-[r]->(m) WHERE not r.%s in {ids} RETURN n, r, m", edgeIdFieldName), Values.parameters("ids", filter));
+            // cypher statement for all edges in database
+            Statement statement = new Statement("MATCH (n)-[r]->(m) RETURN n, r, m");
             // find edges
             Stream<Edge> query = edges(statement);
-            // create stream from memory and query result
-            Iterator<Edge> iterator = combine(edges.values().stream().map(edge -> (Edge)edge), query);
+            // combine stream from memory (transient) and query result
+            Iterator<Edge> iterator = combine(transientEdges.stream().map(edge -> (Edge)edge), query);
             // it is safe to update loaded flag at this time
             edgesLoaded = true;
             // return iterator
@@ -281,6 +278,7 @@ class Neo4JSession {
             return identifiers.stream()
                 .filter(edges::containsKey)
                 .map(id -> (Edge)edges.get(id))
+                .collect(Collectors.toCollection(LinkedList::new))
                 .iterator();
         }
         // no need to execute query, only items in memory
@@ -543,13 +541,13 @@ class Neo4JSession {
             catch (ClientException ex) {
                 // log error
                 if (logger.isErrorEnabled())
-                    logger.error("Error committing transaction on session: {}", session.hashCode(), ex);
+                    logger.error("Error committing transaction on session [{}]", session.hashCode(), ex);
                 // throw original exception
                 throw ex;
             }
         }
         else if (logger.isDebugEnabled())
-            logger.debug("Rolling back transaction on session: {}", session.hashCode());
+            logger.debug("Rolling back transaction on session [{}]", session.hashCode());
         // clean internal caches
         deletedEdges.clear();
         edgeDeleteQueue.clear();
