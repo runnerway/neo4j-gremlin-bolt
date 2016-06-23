@@ -11,11 +11,11 @@ Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to
 ### Maven
 
 ```xml
-  <dependency>
-      <groupId>com.steelbridgelabs.oss</groupId>
-      <artifactId>neo4j-gremlin-bolt</artifactId>
-      <version>{version}</version>
-  </dependency>
+    <dependency>
+        <groupId>com.steelbridgelabs.oss</groupId>
+        <artifactId>neo4j-gremlin-bolt</artifactId>
+        <version>{version}</version>
+    </dependency>
 ```
 
 ### Gradle
@@ -29,12 +29,33 @@ Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to
 ### Ivy
 
 ```xml
-    <dependency org="com.steelbridgelabs.oss" name="neo4j-gremlin-bolt" rev="{version}"/>
+    <dependency org="com.steelbridgelabs.oss" name="neo4j-gremlin-bolt" rev="{version}" />
 ```
 
 *Please check the [Releases](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/releases) for the latest version available.
 
+## License
+
+neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0](http://www.apache.org/licenses/LICENSE-2.0).
+
 # Graph API
+
+## Connecting to the database
+
+```java
+    // create driver instance (see [neo4j-java-driver](https://github.com/neo4j/neo4j-java-driver) for more information)
+    Driver driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic("neo4j", "neo4j"));
+    ...
+    // create id provider instances
+    vertexIdProvider = ...
+    edgeIdProvider = ...
+    propertyIdProvider = ...
+    
+    // create graph instance
+    try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider)) {
+        
+    }
+```
 
 ## Working with Vertices and Edges
 
