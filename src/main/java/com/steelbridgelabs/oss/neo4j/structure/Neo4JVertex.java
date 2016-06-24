@@ -274,7 +274,17 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         }
     }
 
-    String matchClause(String alias, String idParameterName) {
+    /**
+     * Generates a Cypher MATCH clause for the vertex, example:
+     * <p>
+     * (alias:Label1:Label2{id: {idParameterName}})
+     * </p>
+     *
+     * @param alias           the node alias, <code>null</code> if not required.
+     * @param idParameterName the name of the parameter that contains the vertex id.
+     * @return the Cyper MATCH clause.
+     */
+    public String matchClause(String alias, String idParameterName) {
         Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
         // generate match clause
         return alias != null ? "(" + alias + ":" + processLabels(matchLabels) + "{" + idFieldName + ": {" + idParameterName + "}})" : "(:" + processLabels(matchLabels) + "{" + idFieldName + ": {" + idParameterName + "}})";
