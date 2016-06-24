@@ -248,7 +248,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement insertStatement() {
         // create statement
-        String statement = "MATCH " + out.matchClause("o", "oid") + ", " + in.matchClause("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i)";
+        String statement = "MATCH " + out.matchPattern("o", "oid") + ", " + in.matchPattern("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i)";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "ep", statementParameters());
         // reset flags
@@ -260,7 +260,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement updateStatement() {
         // update statement
-        String statement = "MATCH " + out.matchClause("o", "oid") + ", " + in.matchClause("i", "iid") + " MERGE (o)-[r:`" + label + "`{" + idFieldName + ": {id}}]->(i) ON MATCH SET r = {rp}";
+        String statement = "MATCH " + out.matchPattern("o", "oid") + ", " + in.matchPattern("i", "iid") + " MERGE (o)-[r:`" + label + "`{" + idFieldName + ": {id}}]->(i) ON MATCH SET r = {rp}";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
         // reset flags
@@ -272,7 +272,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement deleteStatement() {
         // delete statement
-        String statement = "MATCH " + out.matchClause("o", "oid") + "-[r:`" + label + "`{" + idFieldName + ": {id}}]->" + in.matchClause("i", "iid") + " DELETE r";
+        String statement = "MATCH " + out.matchPattern("o", "oid") + "-[r:`" + label + "`{" + idFieldName + ": {id}}]->" + in.matchPattern("i", "iid") + " DELETE r";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id);
         // command statement

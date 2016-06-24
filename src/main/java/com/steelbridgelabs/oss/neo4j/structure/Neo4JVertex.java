@@ -275,7 +275,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     }
 
     /**
-     * Generates a Cypher MATCH clause for the vertex, example:
+     * Generates a Cypher MATCH pattern for the vertex, example:
      * <p>
      * (alias:Label1:Label2{id: {idParameterName}})
      * </p>
@@ -284,9 +284,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      * @param idParameterName the name of the parameter that contains the vertex id.
      * @return the Cyper MATCH clause.
      */
-    public String matchClause(String alias, String idParameterName) {
+    public String matchPattern(String alias, String idParameterName) {
         Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
-        // generate match clause
+        // generate match pattern
         return alias != null ? "(" + alias + ":" + processLabels(matchLabels) + "{" + idFieldName + ": {" + idParameterName + "}})" : "(:" + processLabels(matchLabels) + "{" + idFieldName + ": {" + idParameterName + "}})";
     }
 
@@ -351,7 +351,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchClause("n", "id")).append("-[r]->(m)");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r]->(m)");
                 // edge ids already in memory
                 List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -384,7 +384,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH (n)-[r]->").append(matchClause("m", "id"));
+                builder.append("MATCH (n)-[r]->").append(matchPattern("m", "id"));
                 // edge ids already in memory
                 List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -415,7 +415,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // create string builder
             StringBuilder builder = new StringBuilder();
             // match clause
-            builder.append("MATCH ").append(matchClause("n", "id")).append("-[r]-(m)");
+            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r]-(m)");
             // edge ids already in memory
             List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
             // process where clause
@@ -460,7 +460,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchClause(null, "id")).append("-[r]->(m)");
+                builder.append("MATCH ").append(matchPattern(null, "id")).append("-[r]->(m)");
                 // edge ids already in memory
                 List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -488,7 +488,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchClause(null, "id")).append("<-[r]-(m)");
+                builder.append("MATCH ").append(matchPattern(null, "id")).append("<-[r]-(m)");
                 // edge ids already in memory
                 List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -514,7 +514,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // create string builder
             StringBuilder builder = new StringBuilder();
             // match clause
-            builder.append("MATCH ").append(matchClause(null, "id")).append("-[r]-(m)");
+            builder.append("MATCH ").append(matchPattern(null, "id")).append("-[r]-(m)");
             // edge ids already in memory
             List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
             // process where clause
@@ -756,7 +756,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // parameters
                 Map<String, Object> parameters = new HashMap<>();
                 // merge statement
-                builder.append("MERGE ").append(matchClause("v", "id"));
+                builder.append("MERGE ").append(matchPattern("v", "id"));
                 // id parameter
                 parameters.put("id", id);
                 // check vertex is dirty
@@ -793,7 +793,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     @Override
     public Statement deleteStatement() {
         // create statement
-        String statement = "MATCH " + matchClause("v", "id") + " DETACH DELETE v";
+        String statement = "MATCH " + matchPattern("v", "id") + " DETACH DELETE v";
         // parameters
         Value parameters = Values.parameters("id", id);
         // command statement
