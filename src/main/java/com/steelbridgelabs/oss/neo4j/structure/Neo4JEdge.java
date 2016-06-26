@@ -152,6 +152,9 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         this.in = in;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<Vertex> vertices(Direction direction) {
         // out direction
@@ -164,16 +167,25 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         return Stream.of((Vertex)out, in).iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Object id() {
         return id;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String label() {
         return label;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Graph graph() {
         return graph;
@@ -184,6 +196,9 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         return dirty;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <V> Property<V> property(String name, V value) {
         ElementHelper.validateProperty(name, value);
@@ -199,12 +214,18 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         return propertyValue;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void remove() {
         // remove edge on session
         session.removeEdge(this, true);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <V> Iterator<Property<V>> properties(String... propertyKeys) {
@@ -235,8 +256,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
             .iterator();
     }
 
-    @Override
-    public Map<String, Object> statementParameters() {
+    private Map<String, Object> statementParameters() {
         // process properties
         Map<String, Object> parameters = properties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value()));
         // append id
@@ -279,6 +299,25 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         return new Statement(statement, parameters);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object object) {
+        return object instanceof Edge && ElementHelper.areEqual(this, object);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return ElementHelper.hashCode(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return StringFactory.edgeString(this);

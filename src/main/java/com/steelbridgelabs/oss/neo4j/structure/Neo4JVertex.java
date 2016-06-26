@@ -234,11 +234,17 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Object id() {
         return id;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String label() {
         // labels separated by "::"
@@ -280,9 +286,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      * (alias:Label1:Label2{id: {idParameterName}})
      * </p>
      *
-     * @param alias           the node alias, <code>null</code> if not required.
-     * @param idParameterName the name of the parameter that contains the vertex id.
-     * @return the Cyper MATCH clause.
+     * @param alias           The node alias, <code>null</code> if not required.
+     * @param idParameterName The name of the parameter that contains the vertex id.
+     * @return the Cypher MATCH clause.
      */
     public String matchPattern(String alias, String idParameterName) {
         Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
@@ -295,6 +301,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return dirty;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Edge addEdge(String label, Vertex vertex, Object... keyValues) {
         ElementHelper.validateLabel(label);
@@ -334,6 +343,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<Edge> edges(Direction direction, String... labels) {
         Objects.requireNonNull(direction, "direction cannot be null");
@@ -443,6 +455,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             .iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... labels) {
         Objects.requireNonNull(direction, "direction cannot be null");
@@ -536,6 +551,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             .iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String name, V value, Object... keyValues) {
@@ -605,6 +623,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return property;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <V> VertexProperty<V> property(String key) {
@@ -629,6 +650,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return VertexProperty.<V>empty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <V> Iterator<VertexProperty<V>> properties(String... propertyKeys) {
@@ -669,11 +693,17 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return Collections.emptyIterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Graph graph() {
         return graph;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void remove() {
         // remove all edges
@@ -694,8 +724,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         outEdges.add(edge);
     }
 
-    @Override
-    public Map<String, Object> statementParameters() {
+    private Map<String, Object> statementParameters() {
         // define collector
         Collector<Map.Entry<String, Collection<VertexProperty>>, Map<String, Object>, Map<String, Object>> collector = Collector.of(
             HashMap::new,
@@ -806,6 +835,25 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return labels.stream().map(label -> "`" + label + "`").collect(Collectors.joining(":"));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object object) {
+        return object instanceof Vertex && ElementHelper.areEqual(this, object);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return ElementHelper.hashCode(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return StringFactory.vertexString(this);

@@ -137,6 +137,9 @@ public class Neo4JGraph implements Graph {
         return session;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Vertex addVertex(Object... keyValues) {
         // get current session
@@ -170,16 +173,25 @@ public class Neo4JGraph implements Graph {
         return session.executeStatement(new Statement(statement, Values.value(parameters)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <C extends GraphComputer> C compute(Class<C> implementation) throws IllegalArgumentException {
         throw Graph.Exceptions.graphComputerNotSupported();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public GraphComputer compute() throws IllegalArgumentException {
         throw Graph.Exceptions.graphComputerNotSupported();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
         // get current session
@@ -219,6 +231,9 @@ public class Neo4JGraph implements Graph {
             .iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<Edge> edges(Object... ids) {
         // get current session
@@ -258,6 +273,9 @@ public class Neo4JGraph implements Graph {
             .iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Transaction tx() {
         // open transaction if needed
@@ -267,16 +285,25 @@ public class Neo4JGraph implements Graph {
         return transaction;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Variables variables() {
         throw Graph.Exceptions.variablesNotSupported();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Configuration configuration() {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() {
         // get current session
@@ -289,11 +316,17 @@ public class Neo4JGraph implements Graph {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return StringFactory.graphString(this, "");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Features features() {
         return new Neo4JGraphFeatures();
