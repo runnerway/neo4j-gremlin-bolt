@@ -618,13 +618,11 @@ class Neo4JSession {
         for (Neo4JEdge edge : edgeUpdateQueue) {
             // create statement
             Statement statement = edge.updateStatement();
-            if (statement != null) {
-                // log information
-                if (logger.isDebugEnabled())
-                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
-                // execute statement
-                transaction.run(statement);
-            }
+            // log information
+            if (logger.isDebugEnabled())
+                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
+            // execute statement
+            transaction.run(statement);
         }
     }
 
