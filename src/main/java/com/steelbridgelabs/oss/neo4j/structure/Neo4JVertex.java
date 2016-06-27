@@ -310,6 +310,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         if (vertex == null)
             throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // add edge
         return session.addEdge(label, this, (Neo4JVertex)vertex, keyValues);
     }
@@ -350,6 +352,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public Iterator<Edge> edges(Direction direction, String... labels) {
         Objects.requireNonNull(direction, "direction cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // load labels in hash set
         Set<String> set = new HashSet<>(Arrays.asList(labels));
         // parameters
@@ -462,6 +466,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public Iterator<Vertex> vertices(Direction direction, String... labels) {
         Objects.requireNonNull(direction, "direction cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // load labels in hash set
         Set<String> set = new HashSet<>(Arrays.asList(labels));
         // parameters
@@ -566,6 +572,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         VertexProperty.Cardinality existingCardinality = cardinalities.get(name);
         if (existingCardinality != null && existingCardinality != cardinality)
             throw new IllegalArgumentException(String.format(Locale.getDefault(), "Property %s has been defined with %s cardinality", name, existingCardinality));
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // vertex property
         Neo4JVertexProperty<V> property = new Neo4JVertexProperty<>(this, propertyIdProvider.generateId(), name, value);
         // check cardinality
@@ -706,6 +714,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      */
     @Override
     public void remove() {
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // remove all edges
         outEdges.forEach(edge -> session.removeEdge(edge, false));
         // remove vertex on session

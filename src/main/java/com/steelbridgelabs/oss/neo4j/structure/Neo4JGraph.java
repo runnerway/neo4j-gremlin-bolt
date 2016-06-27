@@ -49,8 +49,6 @@ public class Neo4JGraph implements Graph {
 
     private class Neo4JTransaction extends AbstractThreadLocalTransaction {
 
-        private final ThreadLocal<org.neo4j.driver.v1.Transaction> transaction = ThreadLocal.withInitial(() -> null);
-
         public Neo4JTransaction() {
             super(Neo4JGraph.this);
         }
@@ -60,48 +58,41 @@ public class Neo4JGraph implements Graph {
             // current session
             Neo4JSession session = Neo4JGraph.this.currentSession();
             // open database transaction
-            transaction.set(session.beginTransaction());
-            // make sure we flush the changes on commit
-            addTransactionListener(session::flush);
+            session.beginTransaction();
         }
 
         @Override
         protected void doCommit() throws TransactionException {
-            // current transaction
-            org.neo4j.driver.v1.Transaction tx = transaction.get();
-            if (tx != null) {
-                // indicate everything is ok
-                tx.success();
-            }
+            // current session
+            Neo4JSession session = Neo4JGraph.this.currentSession();
+            // commit transaction
+            session.commit();
         }
 
         @Override
         protected void doRollback() throws TransactionException {
-            // current transaction
-            org.neo4j.driver.v1.Transaction tx = transaction.get();
-            if (tx != null) {
-                // indicate failure
-                tx.failure();
-            }
+            // current session
+            Neo4JSession session = Neo4JGraph.this.currentSession();
+            // rollback transaction
+            session.rollback();
         }
 
         @Override
         public boolean isOpen() {
-            return transaction.get() != null;
+            // current session
+            Neo4JSession session = Neo4JGraph.this.currentSession();
+            // check transaction is open
+            return session.isTransactionOpen();
         }
 
         @Override
         protected void doClose() {
             // close base
             super.doClose();
-            // current transaction
-            org.neo4j.driver.v1.Transaction tx = transaction.get();
-            if (tx != null) {
-                // close transaction
-                tx.close();
-                // remove reference
-                transaction.remove();
-            }
+            // current session
+            Neo4JSession session = Neo4JGraph.this.currentSession();
+            // close transaction
+            session.closeTransaction();
         }
     }
 
@@ -144,6 +135,8 @@ public class Neo4JGraph implements Graph {
     public Vertex addVertex(Object... keyValues) {
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // add vertex
         return session.addVertex(keyValues);
     }
@@ -152,6 +145,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(statement, "statement cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // execute statement
         return session.executeStatement(statement);
     }
@@ -160,6 +155,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(statement, "statement cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // execute statement
         return session.executeStatement(new Statement(statement));
     }
@@ -169,6 +166,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(parameters, "parameters cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // execute statement
         return session.executeStatement(new Statement(statement, Values.value(parameters)));
     }
@@ -196,6 +195,8 @@ public class Neo4JGraph implements Graph {
     public Iterator<Vertex> vertices(Object... ids) {
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.vertices(ids);
     }
@@ -204,6 +205,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(statement, "statement cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.vertices(statement)
             .collect(Collectors.toCollection(LinkedList::new))
@@ -214,6 +217,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(statement, "statement cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.vertices(new Statement(statement))
             .collect(Collectors.toCollection(LinkedList::new))
@@ -225,6 +230,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(parameters, "parameters cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.vertices(new Statement(statement, parameters))
             .collect(Collectors.toCollection(LinkedList::new))
@@ -238,6 +245,8 @@ public class Neo4JGraph implements Graph {
     public Iterator<Edge> edges(Object... ids) {
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find edges
         return session.edges(ids);
     }
@@ -246,6 +255,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(statement, "statement cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.edges(statement)
             .collect(Collectors.toCollection(LinkedList::new))
@@ -256,6 +267,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(statement, "statement cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.edges(new Statement(statement))
             .collect(Collectors.toCollection(LinkedList::new))
@@ -267,6 +280,8 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(parameters, "parameters cannot be null");
         // get current session
         Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
         // find vertices
         return session.edges(new Statement(statement, parameters))
             .collect(Collectors.toCollection(LinkedList::new))
@@ -278,10 +293,7 @@ public class Neo4JGraph implements Graph {
      */
     @Override
     public Transaction tx() {
-        // open transaction if needed
-        if (!transaction.isOpen())
-            transaction.open();
-        // return transaction
+        // return transaction, do not open transaction here!
         return transaction;
     }
 
