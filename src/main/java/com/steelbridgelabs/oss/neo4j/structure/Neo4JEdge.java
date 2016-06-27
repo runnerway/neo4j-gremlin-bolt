@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.neo4j.driver.v1.Statement;
@@ -91,6 +92,16 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         }
 
         @Override
+        public boolean equals(final Object object) {
+            return object instanceof Property && ElementHelper.areEqual(this, object);
+        }
+
+        @Override
+        public int hashCode() {
+            return ElementHelper.hashCode((Element)this);
+        }
+
+        @Override
         public String toString() {
             return StringFactory.propertyString(this);
         }
@@ -106,6 +117,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private final Neo4JVertex in;
 
     private boolean dirty = false;
+    private Map<String, Neo4JEdgeProperty> originalProperties;
 
     Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
@@ -124,6 +136,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         this.label = label;
         this.out = out;
         this.in = in;
+        // initialize original properties
+        originalProperties = new HashMap<>();
     }
 
     Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
@@ -150,6 +164,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // vertices
         this.out = out;
         this.in = in;
+        // initialize original properties
+        originalProperties = new HashMap<>(properties);
     }
 
     /**
@@ -157,6 +173,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
      */
     @Override
     public Iterator<Vertex> vertices(Direction direction) {
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // out direction
         if (direction == Direction.OUT)
             return Stream.of((Vertex)out).iterator();
@@ -202,6 +220,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public <V> Property<V> property(String name, V value) {
         ElementHelper.validateProperty(name, value);
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // property value for key
         Neo4JEdgeProperty<V> propertyValue = new Neo4JEdgeProperty<>(this, name, value);
         // update map
@@ -219,6 +239,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
      */
     @Override
     public void remove() {
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // remove edge on session
         session.removeEdge(this, true);
     }
@@ -297,6 +319,24 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id);
         // command statement
         return new Statement(statement, parameters);
+    }
+
+    void commit() {
+        // commit property values
+        originalProperties = new HashMap<>(properties);
+        // reset flags
+        dirty = false;
+    }
+
+    void rollback() {
+        // restore edge references
+        out.addOutEdge(this);
+        in.addInEdge(this);
+        // restore property values
+        properties.clear();
+        properties.putAll(originalProperties);
+        // reset flags
+        dirty = false;
     }
 
     /**

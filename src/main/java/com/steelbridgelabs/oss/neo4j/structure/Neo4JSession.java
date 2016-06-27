@@ -124,12 +124,35 @@ class Neo4JSession {
     public void commit() {
         // check we have an open transaction
         if (transaction != null) {
+            // log information
+            if (logger.isDebugEnabled())
+                logger.debug("Committing transaction [{}]", transaction.hashCode());
             // indicate success
             transaction.success();
             // flush session
-            flush(Transaction.Status.COMMIT);
+            flush();
             // close neo4j transaction (this is the moment that data is committed to the server)
             transaction.close();
+            // commit transient vertices
+            transientVertices.forEach(Neo4JVertex::commit);
+            // commit transient edges
+            transientEdges.forEach(Neo4JEdge::commit);
+            // commit dirty vertices
+            vertexUpdateQueue.forEach(Neo4JVertex::commit);
+            // commit dirty edges
+            edgeUpdateQueue.forEach(Neo4JEdge::commit);
+            // clean internal structures
+            deletedEdges.clear();
+            edgeDeleteQueue.clear();
+            deletedVertices.clear();
+            vertexDeleteQueue.clear();
+            transientEdges.clear();
+            transientVertices.clear();
+            vertexUpdateQueue.clear();
+            edgeUpdateQueue.clear();
+            // log information
+            if (logger.isDebugEnabled())
+                logger.debug("Successfully committed transaction [{}]", transaction.hashCode());
             // remove instance
             transaction = null;
         }
@@ -138,12 +161,53 @@ class Neo4JSession {
     public void rollback() {
         // check we have an open transaction
         if (transaction != null) {
+            // log information
+            if (logger.isDebugEnabled())
+                logger.debug("Rolling back transaction [{}]", transaction.hashCode());
             // indicate failure
             transaction.failure();
-            // flush session
-            flush(Transaction.Status.ROLLBACK);
             // close neo4j transaction (this is the moment that data is rolled-back from the server)
             transaction.close();
+            // reset vertices loaded flag if needed
+            if (!vertexUpdateQueue.isEmpty() || !deletedVertices.isEmpty())
+                verticesLoaded = false;
+            // reset edges loaded flag if needed
+            if (!edgeUpdateQueue.isEmpty() || !deletedEdges.isEmpty())
+                edgesLoaded = false;
+            // remove transient vertices from map
+            transientVertices.forEach(vertex -> vertices.remove(vertex.id()));
+            // remove transient edges from map
+            transientEdges.forEach(edge -> edges.remove(edge.id()));
+            // rollback dirty vertices
+            vertexUpdateQueue.forEach(Neo4JVertex::rollback);
+            // rollback dirty edges
+            edgeUpdateQueue.forEach(Neo4JEdge::rollback);
+            // restore deleted vertices
+            vertexDeleteQueue.forEach(vertex -> {
+                // restore in map
+                vertices.put(vertex.id(), vertex);
+                // rollback vertex
+                vertex.rollback();
+            });
+            // restore deleted edges
+            edgeDeleteQueue.forEach(edge -> {
+                // restore in map
+                edges.put(edge.id(), edge);
+                // rollback edge
+                edge.rollback();
+            });
+            // clean internal structures
+            deletedEdges.clear();
+            edgeDeleteQueue.clear();
+            deletedVertices.clear();
+            vertexDeleteQueue.clear();
+            transientEdges.clear();
+            transientVertices.clear();
+            vertexUpdateQueue.clear();
+            edgeUpdateQueue.clear();
+            // log information
+            if (logger.isDebugEnabled())
+                logger.debug("Successfully rolled-back transaction [{}]", transaction.hashCode());
             // remove instance
             transaction = null;
         }
@@ -369,8 +433,17 @@ class Neo4JSession {
             // mark edge as deleted (prevent returning edge in query results)
             deletedEdges.add(id);
             // check we need to execute delete statement on edge
-            if (explicit)
+            if (explicit) {
+                // remove references from adjacent vertices
+                edge.vertices(Direction.BOTH).forEachRemaining(vertex -> {
+                    // remove from vertex
+                    ((Neo4JVertex)vertex).removeEdge(edge);
+                });
+                // add to delete queue
                 edgeDeleteQueue.add(edge);
+            }
+            // remove it from update queue (avoid issuing MERGE command for an element that has been deleted)
+            edgeUpdateQueue.remove(edge);
         }
         // remove edge from map
         edges.remove(id);
@@ -516,6 +589,8 @@ class Neo4JSession {
             deletedVertices.add(id);
             // add vertex to queue
             vertexDeleteQueue.add(vertex);
+            // remove it from update queue (avoid issuing MERGE command for an element that has been deleted)
+            vertexUpdateQueue.remove(vertex);
         }
         // remove vertex from map
         vertices.remove(id);
@@ -537,68 +612,28 @@ class Neo4JSession {
         }
     }
 
-    private void flush(Transaction.Status status) {
-        // check status
-        if (status == Transaction.Status.COMMIT) {
-            try {
-                // log information
-                if (logger.isDebugEnabled())
-                    logger.debug("Committing transaction [{}]", transaction.hashCode());
-                // delete edges
-                deleteEdges();
-                // delete vertices
-                deleteVertices();
-                // create vertices
-                createVertices();
-                // update vertices
-                updateVertices();
-                // create edges
-                createEdges();
-                // update edges
-                updateEdges();
-                // log information
-                if (logger.isDebugEnabled())
-                    logger.debug("Successfully committed transaction [{}]", transaction.hashCode());
-            }
-            catch (ClientException ex) {
-                // log error
-                if (logger.isErrorEnabled())
-                    logger.error("Error committing transaction [{}]", transaction.hashCode(), ex);
-                // throw original exception
-                throw ex;
-            }
+    private void flush() {
+        try {
+            // delete edges
+            deleteEdges();
+            // delete vertices
+            deleteVertices();
+            // create vertices
+            createVertices();
+            // update vertices
+            updateVertices();
+            // create edges
+            createEdges();
+            // update edges
+            updateEdges();
         }
-        else if (status == Transaction.Status.ROLLBACK) {
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Rolling back transaction [{}]", transaction.hashCode());
-            // reset vertices loaded flag if needed
-            if (!vertexUpdateQueue.isEmpty() || !deletedVertices.isEmpty())
-                verticesLoaded = false;
-            // reset edges loaded flag if needed
-            if (!edgeUpdateQueue.isEmpty() || !deletedEdges.isEmpty())
-                edgesLoaded = false;
-            // remove transient vertices from map
-            transientVertices.forEach(vertex -> vertices.remove(vertex.id()));
-            // remove transient edges from map
-            transientEdges.forEach(edge -> edges.remove(edge.id()));
-            // remove dirty vertices from map
-            vertexUpdateQueue.forEach(vertex -> vertices.remove(vertex.id()));
-            // remove dirty edges from map
-            edgeUpdateQueue.forEach(edge -> edges.remove(edge.id()));
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Successfully rolled-back transaction [{}]", transaction.hashCode());
+        catch (ClientException ex) {
+            // log error
+            if (logger.isErrorEnabled())
+                logger.error("Error committing transaction [{}]", transaction.hashCode(), ex);
+            // throw original exception
+            throw ex;
         }
-        // clean internal caches
-        deletedEdges.clear();
-        edgeDeleteQueue.clear();
-        deletedVertices.clear();
-        vertexDeleteQueue.clear();
-        transientEdges.clear();
-        transientVertices.clear();
-        vertexUpdateQueue.clear();
-        edgeUpdateQueue.clear();
     }
 
     private void createVertices() {
