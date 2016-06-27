@@ -17,8 +17,13 @@
  * under the License.
  */
 
-package com.steelbridgelabs.oss.neo4j.structure;
+package com.steelbridgelabs.oss.neo4j;
 
+import com.steelbridgelabs.oss.neo4j.ElementIdProvider;
+import com.steelbridgelabs.oss.neo4j.structure.Neo4JEdge;
+import com.steelbridgelabs.oss.neo4j.structure.Neo4JGraph;
+import com.steelbridgelabs.oss.neo4j.structure.Neo4JGraphConfigurationBuilder;
+import com.steelbridgelabs.oss.neo4j.structure.Neo4JVertex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;

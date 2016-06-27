@@ -226,7 +226,7 @@ class Neo4JSession {
         }
     }
 
-    public Vertex addVertex(Object[] keyValues) {
+    public Neo4JVertex addVertex(Object... keyValues) {
         Objects.requireNonNull(keyValues, "keyValues cannot be null");
         // verify parameters are key/value pairs
         ElementHelper.legalPropertyKeyValueArray(keyValues);
@@ -245,7 +245,7 @@ class Neo4JSession {
         return vertex;
     }
 
-    Edge addEdge(String label, Neo4JVertex out, Neo4JVertex in, Object[] keyValues) {
+    Neo4JEdge addEdge(String label, Neo4JVertex out, Neo4JVertex in, Object... keyValues) {
         Objects.requireNonNull(label, "label cannot be null");
         Objects.requireNonNull(out, "out cannot be null");
         Objects.requireNonNull(in, "in cannot be null");
