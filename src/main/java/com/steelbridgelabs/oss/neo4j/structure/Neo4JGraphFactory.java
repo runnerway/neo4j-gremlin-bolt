@@ -35,8 +35,11 @@ public class Neo4JGraphFactory {
         if (null == configuration)
             throw Graph.Exceptions.argumentCanNotBeNull("configuration");
         try {
+            Config config = Config.build()
+                .withMaxSessions(configuration.getInt(Neo4JGraphConfigurationBuilder.Neo4JConnectionPoolSizeConfigurationKey))
+                .toConfig();
             // create driver instance
-            Driver driver = GraphDatabase.driver(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JUrlConfigurationKey), AuthTokens.basic(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JUsernameConfigurationKey), configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JPasswordConfigurationKey)), Config.defaultConfig());
+            Driver driver = GraphDatabase.driver(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JUrlConfigurationKey), AuthTokens.basic(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JUsernameConfigurationKey), configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JPasswordConfigurationKey)), config);
             // create providers
             Neo4JElementIdProvider<?> vertexIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JVertexIdProviderClassNameConfigurationKey));
             Neo4JElementIdProvider<?> edgeIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JEdgeIdProviderClassNameConfigurationKey));

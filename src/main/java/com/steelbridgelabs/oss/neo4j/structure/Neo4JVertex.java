@@ -174,7 +174,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private boolean outEdgesLoaded = false;
     private boolean inEdgesLoaded = false;
     private boolean dirty = false;
-    private SortedSet<String> matchLabels;
+    private SortedSet<String> originalLabels;
+    private Map<String, Collection<VertexProperty>> originalProperties;
+    private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
     Neo4JVertex(Graph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Object id, Collection<String> labels) {
         Objects.requireNonNull(graph, "graph cannot be null");
@@ -191,7 +193,10 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.id = id;
         this.labels = new TreeSet<>(labels);
         // this is the original set of labels (used to match the vertex)
-        this.matchLabels = new TreeSet<>(labels);
+        this.originalLabels = new TreeSet<>(labels);
+        // initialize original properties and cardinalities
+        this.originalProperties = new HashMap<>();
+        this.originalCardinalities = new HashMap<>();
     }
 
     Neo4JVertex(Graph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Node node) {
@@ -209,7 +214,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.id = node.get(idFieldName).asObject();
         this.labels = StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toCollection(TreeSet::new));
         // this is the original set of labels (used to match the vertex)
-        this.matchLabels = new TreeSet<>(this.labels);
+        this.originalLabels = new TreeSet<>(this.labels);
         // copy properties from node, remove idFieldName from map
         StreamSupport.stream(node.keys().spliterator(), false).filter(key -> idFieldName.compareTo(key) != 0).forEach(key -> {
             // value
@@ -232,6 +237,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     break;
             }
         });
+        // initialize original properties and cardinalities
+        this.originalProperties = new HashMap<>(properties);
+        this.originalCardinalities = new HashMap<>(cardinalities);
     }
 
     /**
@@ -293,7 +301,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public String matchPattern(String alias, String idParameterName) {
         Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
         // generate match pattern
-        return alias != null ? "(" + alias + ":" + processLabels(matchLabels) + "{" + idFieldName + ": {" + idParameterName + "}})" : "(:" + processLabels(matchLabels) + "{" + idFieldName + ": {" + idParameterName + "}})";
+        return alias != null ? "(" + alias + ":" + processLabels(originalLabels) + "{" + idFieldName + ": {" + idParameterName + "}})" : "(:" + processLabels(originalLabels) + "{" + idFieldName + ": {" + idParameterName + "}})";
     }
 
     @Override
@@ -310,6 +318,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         if (vertex == null)
             throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // add edge
         return session.addEdge(label, this, (Neo4JVertex)vertex, keyValues);
     }
@@ -350,6 +360,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public Iterator<Edge> edges(Direction direction, String... labels) {
         Objects.requireNonNull(direction, "direction cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // load labels in hash set
         Set<String> set = new HashSet<>(Arrays.asList(labels));
         // parameters
@@ -462,6 +474,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public Iterator<Vertex> vertices(Direction direction, String... labels) {
         Objects.requireNonNull(direction, "direction cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // load labels in hash set
         Set<String> set = new HashSet<>(Arrays.asList(labels));
         // parameters
@@ -566,6 +580,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         VertexProperty.Cardinality existingCardinality = cardinalities.get(name);
         if (existingCardinality != null && existingCardinality != cardinality)
             throw new IllegalArgumentException(String.format(Locale.getDefault(), "Property %s has been defined with %s cardinality", name, existingCardinality));
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // vertex property
         Neo4JVertexProperty<V> property = new Neo4JVertexProperty<>(this, propertyIdProvider.generateId(), name, value);
         // check cardinality
@@ -706,6 +722,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      */
     @Override
     public void remove() {
+        // transaction should be ready for io operations
+        graph.tx().readWrite();
         // remove all edges
         outEdges.forEach(edge -> session.removeEdge(edge, false));
         // remove vertex on session
@@ -771,7 +789,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             dirty = false;
             labelsAdded.clear();
             labelsRemoved.clear();
-            matchLabels = new TreeSet<>(labels);
+            originalLabels = new TreeSet<>(labels);
         }
     }
 
@@ -813,7 +831,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 dirty = false;
                 labelsAdded.clear();
                 labelsRemoved.clear();
-                matchLabels = new TreeSet<>(labels);
+                originalLabels = new TreeSet<>(labels);
             }
         }
         return null;
@@ -827,6 +845,35 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         Value parameters = Values.parameters("id", id);
         // command statement
         return new Statement(statement, parameters);
+    }
+
+    void commit() {
+        // commit labels
+        labelsAdded.clear();
+        labelsRemoved.clear();
+        originalLabels = new TreeSet<>(labels);
+        // update property values
+        originalProperties = new HashMap<>(properties);
+        originalCardinalities = new HashMap<>(cardinalities);
+        // reset flags
+        dirty = false;
+    }
+
+    void rollback() {
+        // restore labels
+        labelsAdded.clear();
+        labelsRemoved.clear();
+        labels.clear();
+        labels.addAll(originalLabels);
+        // restore property values
+        properties.clear();
+        cardinalities.clear();
+        properties.putAll(originalProperties);
+        cardinalities.putAll(originalCardinalities);
+        // reset flags
+        outEdgesLoaded = false;
+        inEdgesLoaded = false;
+        dirty = false;
     }
 
     private static String processLabels(Set<String> labels) {

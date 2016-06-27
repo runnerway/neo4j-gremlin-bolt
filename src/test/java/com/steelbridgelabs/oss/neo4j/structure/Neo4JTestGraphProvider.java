@@ -55,6 +55,7 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
         // build configuration
         Configuration configuration = Neo4JGraphConfigurationBuilder.connect("localhost", "neo4j", "123")
             .withElementIdProvider(ElementIdProvider.class)
+            .withConnectionPoolSize(300)
             .build();
         // create property map from configuration
         Map<String, Object> map = StreamSupport.stream(Spliterators.spliteratorUnknownSize(configuration.getKeys(), Spliterator.NONNULL | Spliterator.IMMUTABLE), false)
@@ -131,5 +132,7 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
                 graph.execute("CREATE INDEX ON :vertex(lang)");
                 break;
         }
+        // commit transaction
+        graph.tx().commit();
     }
 }
