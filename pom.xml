@@ -58,7 +58,7 @@ limitations under the License.
         <!-- skip test for now -->
         <maven.test.skip>true</maven.test.skip>
         <!-- neo4j -->
-        <neo4j.version>1.0.2</neo4j.version>
+        <neo4j.version>1.0.3</neo4j.version>
         <!-- gremlin -->
         <gremlin.version>3.2.0-incubating</gremlin.version>
         <!-- slf4j -->

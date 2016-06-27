@@ -108,15 +108,19 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
         switch (graphData) {
             case GRATEFUL:
                 // create indexes
+                graph.execute("CREATE INDEX ON :artist(id)");
                 graph.execute("CREATE INDEX ON :artist(name)");
+                graph.execute("CREATE INDEX ON :song(id)");
                 graph.execute("CREATE INDEX ON :song(name)");
                 graph.execute("CREATE INDEX ON :song(songType)");
                 graph.execute("CREATE INDEX ON :song(performances)");
                 break;
             case MODERN:
                 // create indexes
+                graph.execute("CREATE INDEX ON :person(id)");
                 graph.execute("CREATE INDEX ON :person(name)");
                 graph.execute("CREATE INDEX ON :person(age)");
+                graph.execute("CREATE INDEX ON :software(id)");
                 graph.execute("CREATE INDEX ON :software(name)");
                 graph.execute("CREATE INDEX ON :software(lang)");
                 break;
