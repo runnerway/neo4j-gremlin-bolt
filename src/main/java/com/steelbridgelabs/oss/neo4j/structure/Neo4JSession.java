@@ -109,11 +109,11 @@ class Neo4JSession {
         // check we have a transaction already in progress
         if (transaction != null)
             throw Transaction.Exceptions.transactionAlreadyOpen();
-        // log information
-        if (logger.isDebugEnabled())
-            logger.debug("Beginning transaction on session [{}]", session.hashCode());
         // begin transaction
         transaction = session.beginTransaction();
+        // log information
+        if (logger.isDebugEnabled())
+            logger.debug("Beginning transaction on session [{}-{}]", session.hashCode(), transaction.hashCode());
         // return transaction instance
         return transaction;
     }
@@ -327,6 +327,10 @@ class Neo4JSession {
             transientEdges.remove(edge);
         }
         else {
+            // open transaction if needed
+            Transaction transaction = graph.tx();
+            if (!transaction.isOpen())
+                transaction.open();
             // log information
             if (logger.isDebugEnabled())
                 logger.debug("Deleting edge: {}", edge);
@@ -487,6 +491,10 @@ class Neo4JSession {
             transientVertices.remove(vertex);
         }
         else {
+            // open transaction if needed
+            Transaction transaction = graph.tx();
+            if (!transaction.isOpen())
+                transaction.open();
             // log information
             if (logger.isDebugEnabled())
                 logger.debug("Deleting vertex: {}", vertex);
@@ -502,6 +510,10 @@ class Neo4JSession {
     void dirtyVertex(Neo4JVertex vertex) {
         // check element is a transient one
         if (!transientVertices.contains(vertex)) {
+            // open transaction if needed
+            Transaction transaction = graph.tx();
+            if (!transaction.isOpen())
+                transaction.open();
             // add vertex to processing queue
             vertexUpdateQueue.add(vertex);
         }
@@ -510,6 +522,10 @@ class Neo4JSession {
     void dirtyEdge(Neo4JEdge edge) {
         // check element is a transient one
         if (!transientEdges.contains(edge)) {
+            // open transaction if needed
+            Transaction transaction = graph.tx();
+            if (!transaction.isOpen())
+                transaction.open();
             // add edge to processing queue
             edgeUpdateQueue.add(edge);
         }
@@ -521,7 +537,7 @@ class Neo4JSession {
             try {
                 // log information
                 if (logger.isDebugEnabled())
-                    logger.debug("Committing transaction on session [{}]", session.hashCode());
+                    logger.debug("Committing transaction [{}]", transaction.hashCode());
                 // delete edges
                 deleteEdges();
                 // delete vertices
@@ -536,18 +552,18 @@ class Neo4JSession {
                 updateEdges();
                 // log information
                 if (logger.isDebugEnabled())
-                    logger.debug("Successfully committed transaction on session [{}]", session.hashCode());
+                    logger.debug("Successfully committed transaction [{}]", transaction.hashCode());
             }
             catch (ClientException ex) {
                 // log error
                 if (logger.isErrorEnabled())
-                    logger.error("Error committing transaction on session [{}]", session.hashCode(), ex);
+                    logger.error("Error committing transaction [{}]", transaction.hashCode(), ex);
                 // throw original exception
                 throw ex;
             }
         }
         else if (logger.isDebugEnabled())
-            logger.debug("Rolling back transaction on session [{}]", session.hashCode());
+            logger.debug("Rolling back transaction [{}]", transaction.hashCode());
         // clean internal caches
         deletedEdges.clear();
         edgeDeleteQueue.clear();
