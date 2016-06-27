@@ -25,7 +25,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.neo4j.driver.v1.Statement;
@@ -98,7 +97,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
 
         @Override
         public int hashCode() {
-            return ElementHelper.hashCode((Element)this);
+            return ElementHelper.hashCode(this);
         }
 
         @Override
