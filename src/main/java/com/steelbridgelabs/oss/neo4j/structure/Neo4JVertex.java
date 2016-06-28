@@ -159,6 +159,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     }
 
     private final Graph graph;
+    private final Set<String> partition;
     private final Neo4JSession session;
     private final Neo4JElementIdProvider propertyIdProvider;
     private final Map<String, Collection<VertexProperty>> properties = new HashMap<>();
@@ -178,7 +179,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private Map<String, Collection<VertexProperty>> originalProperties;
     private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
-    Neo4JVertex(Graph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Object id, Collection<String> labels) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Object id, Collection<String> labels) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
@@ -187,6 +188,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         Objects.requireNonNull(labels, "labels cannot be null");
         // store fields
         this.graph = graph;
+        this.partition = new HashSet<>(Arrays.asList(graph.getPartition()));
         this.session = session;
         this.propertyIdProvider = propertyIdProvider;
         this.idFieldName = idFieldName;
@@ -199,7 +201,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.originalCardinalities = new HashMap<>();
     }
 
-    Neo4JVertex(Graph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Node node) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Node node) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
@@ -207,12 +209,14 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         Objects.requireNonNull(node, "node cannot be null");
         // store fields
         this.graph = graph;
+        this.partition = new HashSet<>(Arrays.asList(graph.getPartition()));
         this.session = session;
         this.propertyIdProvider = propertyIdProvider;
         this.idFieldName = idFieldName;
         // from node
         this.id = node.get(idFieldName).asObject();
-        this.labels = StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toCollection(TreeSet::new));
+        // labels, do not store partition as part of labels
+        this.labels = StreamSupport.stream(node.labels().spliterator(), false).filter(label -> !partition.contains(label)).collect(Collectors.toCollection(TreeSet::new));
         // this is the original set of labels (used to match the vertex)
         this.originalLabels = new TreeSet<>(this.labels);
         // copy properties from node, remove idFieldName from map
@@ -265,6 +269,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     public void addLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
+        // exclude partition
+        if (partition.contains(label))
+            throw new IllegalArgumentException("Invalid label, label name cannot be the same as Graph partition labels");
         // add label to set
         if (labels.add(label)) {
             // notify session
@@ -276,6 +283,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     public void removeLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
+        // exclude partition
+        if (partition.contains(label))
+            throw new IllegalArgumentException("Invalid label, label name cannot be the same as Graph partition labels");
         // remove label from set
         if (labels.remove(label)) {
             // check this label was previously added in this session
@@ -301,7 +311,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public String matchPattern(String alias, String idParameterName) {
         Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
         // generate match pattern
-        return alias != null ? "(" + alias + ":" + processLabels(originalLabels) + "{" + idFieldName + ": {" + idParameterName + "}})" : "(:" + processLabels(originalLabels) + "{" + idFieldName + ": {" + idParameterName + "}})";
+        return alias != null ? "(" + alias + ":" + processLabels(originalLabels, true) + "{" + idFieldName + ": {" + idParameterName + "}})" : "(:" + processLabels(originalLabels, true) + "{" + idFieldName + ": {" + idParameterName + "}})";
     }
 
     @Override
@@ -375,7 +385,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append("]->(m)");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append(!partition.isEmpty() ? "]->(m:" + processLabels(partition, false) + ")" : "]->(m)");
                 // edge ids already in memory
                 List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -408,7 +418,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append("]-(m)");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append(!partition.isEmpty() ? "]-(m:" + processLabels(partition, false) + ")" : "]-(m)");
                 // edge ids already in memory
                 List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -439,7 +449,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // create string builder
             StringBuilder builder = new StringBuilder();
             // match clause
-            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append("]-(m)");
+            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append(!partition.isEmpty() ? "]-(m:" + processLabels(partition, false) + ")" : "]-(m)");
             // edge ids already in memory
             List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
             // process where clause
@@ -489,7 +499,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern(null, "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append("]->(m)");
+                builder.append("MATCH ").append(matchPattern(null, "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append(!partition.isEmpty() ? "]->(m:" + processLabels(partition, false) + ")" : "]->(m)");
                 // edge ids already in memory
                 List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -517,7 +527,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern(null, "id")).append("<-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append("]-(m)");
+                builder.append("MATCH ").append(matchPattern(null, "id")).append("<-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append(!partition.isEmpty() ? "]-(m:" + processLabels(partition, false) + ")" : "]-(m)");
                 // edge ids already in memory
                 List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -543,7 +553,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // create string builder
             StringBuilder builder = new StringBuilder();
             // match clause
-            builder.append("MATCH ").append(matchPattern(null, "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append("]-(m)");
+            builder.append("MATCH ").append(matchPattern(null, "id")).append("-[r").append(labels.length == 1 ? ":`" + labels[0] + "`" : "").append(!partition.isEmpty() ? "]-(m:" + processLabels(partition, false) + ")" : "]-(m)");
             // edge ids already in memory
             List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
             // process where clause
@@ -778,7 +788,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public Statement insertStatement() {
         try {
             // create statement
-            String statement = String.format(Locale.US, "CREATE (:%s{vp})", processLabels(this.labels));
+            String statement = String.format(Locale.US, "CREATE (:%s{vp})", processLabels(this.labels, true));
             // parameters
             Value parameters = Values.parameters("vp", statementParameters());
             // command statement
@@ -816,12 +826,12 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // check labels were added
                 if (!labelsAdded.isEmpty()) {
                     // add labels
-                    builder.append(!dirty ? " ON MATCH SET v:" : ", v:").append(processLabels(labelsAdded));
+                    builder.append(!dirty ? " ON MATCH SET v:" : ", v:").append(processLabels(labelsAdded, false));
                 }
                 // check labels were removed
                 if (!labelsRemoved.isEmpty()) {
                     // remove labels
-                    builder.append("REMOVE v:").append(processLabels(labelsRemoved));
+                    builder.append("REMOVE v:").append(processLabels(labelsRemoved, false));
                 }
                 // command statement
                 return new Statement(builder.toString(), parameters);
@@ -876,9 +886,14 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         dirty = false;
     }
 
-    private static String processLabels(Set<String> labels) {
+    private String processLabels(Set<String> labels, boolean addPartition) {
         Objects.requireNonNull(labels, "labels cannot be null");
-        // process labels
+        // check we need to include partition in match
+        if (addPartition && !partition.isEmpty()) {
+            // make sure partition is in match pattern
+            return Stream.concat(partition.stream(), labels.stream()).map(label -> "`" + label + "`").collect(Collectors.joining(":"));
+        }
+        // labels
         return labels.stream().map(label -> "`" + label + "`").collect(Collectors.joining(":"));
     }
 

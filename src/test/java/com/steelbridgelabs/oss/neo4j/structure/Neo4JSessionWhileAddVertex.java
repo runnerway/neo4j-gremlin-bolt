@@ -39,6 +39,7 @@ public class Neo4JSessionWhileAddVertex {
         // arrange
         Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
         Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
@@ -55,6 +56,7 @@ public class Neo4JSessionWhileAddVertex {
         // arrange
         Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
         Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
@@ -71,6 +73,7 @@ public class Neo4JSessionWhileAddVertex {
         // arrange
         Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
         Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
@@ -87,6 +90,7 @@ public class Neo4JSessionWhileAddVertex {
         // arrange
         Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
         Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
@@ -106,6 +110,7 @@ public class Neo4JSessionWhileAddVertex {
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
         Graph.Features features = Mockito.mock(Graph.Features.class);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);

@@ -29,6 +29,7 @@ import java.util.Objects;
  */
 public final class Neo4JGraphConfigurationBuilder {
 
+    public static final String Neo4JGraphNameConfigurationKey = "neo4j.graph.name";
     public static final String Neo4JUrlConfigurationKey = "neo4j.url";
     public static final String Neo4JHostnameConfigurationKey = "neo4j.hostname";
     public static final String Neo4JPortConfigurationKey = "neo4j.port";
@@ -43,6 +44,7 @@ public final class Neo4JGraphConfigurationBuilder {
     private final short port;
     private final String username;
     private final String password;
+    private String graphName;
     private String vertexIdProviderClassName = null;
     private String edgeIdProviderClassName = null;
     private String propertyIdProviderClassName = null;
@@ -68,6 +70,13 @@ public final class Neo4JGraphConfigurationBuilder {
     public static Neo4JGraphConfigurationBuilder connect(String hostname, String username, String password) {
         // create builder instance
         return new Neo4JGraphConfigurationBuilder(hostname, (short)7687, username, password);
+    }
+
+    public Neo4JGraphConfigurationBuilder withName(String graphName) {
+        // store name
+        this.graphName = graphName;
+        // return builder
+        return this;
     }
 
     public Neo4JGraphConfigurationBuilder withVertexIdProvider(Class<?> provider) {
@@ -122,6 +131,8 @@ public final class Neo4JGraphConfigurationBuilder {
         configuration.setProperty(Neo4JUsernameConfigurationKey, username);
         // password
         configuration.setProperty(Neo4JPasswordConfigurationKey, password);
+        // graphName
+        configuration.setProperty(Neo4JGraphNameConfigurationKey, graphName);
         // connection pool size
         configuration.setProperty(Neo4JConnectionPoolSizeConfigurationKey, connectionPoolSize);
         // vertex id provider

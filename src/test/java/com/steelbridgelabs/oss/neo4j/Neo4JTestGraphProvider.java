@@ -19,7 +19,6 @@
 
 package com.steelbridgelabs.oss.neo4j;
 
-import com.steelbridgelabs.oss.neo4j.ElementIdProvider;
 import com.steelbridgelabs.oss.neo4j.structure.Neo4JEdge;
 import com.steelbridgelabs.oss.neo4j.structure.Neo4JGraph;
 import com.steelbridgelabs.oss.neo4j.structure.Neo4JGraphConfigurationBuilder;
@@ -59,6 +58,7 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData graphData) {
         // build configuration
         Configuration configuration = Neo4JGraphConfigurationBuilder.connect("localhost", "neo4j", "123")
+            .withName(graphName)
             .withElementIdProvider(ElementIdProvider.class)
             .withConnectionPoolSize(300)
             .build();
@@ -109,32 +109,32 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
 
     private void createIndices(final Neo4JGraph graph, final LoadGraphWith.GraphData graphData) {
         // default vertex label index
-        graph.execute("CREATE INDEX ON :" + Vertex.DEFAULT_LABEL + "(" + ElementIdProvider.IdFieldName + ")");
+        graph.createIndex(Vertex.DEFAULT_LABEL, ElementIdProvider.IdFieldName);
         // process graph data
         switch (graphData) {
             case GRATEFUL:
                 // create indexes
-                graph.execute("CREATE INDEX ON :artist(id)");
-                graph.execute("CREATE INDEX ON :artist(name)");
-                graph.execute("CREATE INDEX ON :song(id)");
-                graph.execute("CREATE INDEX ON :song(name)");
-                graph.execute("CREATE INDEX ON :song(songType)");
-                graph.execute("CREATE INDEX ON :song(performances)");
+                graph.createIndex("artist", "id");
+                graph.createIndex("artist", "name");
+                graph.createIndex("song", "id");
+                graph.createIndex("song", "name");
+                graph.createIndex("song", "songType");
+                graph.createIndex("song", "performances");
                 break;
             case MODERN:
                 // create indexes
-                graph.execute("CREATE INDEX ON :person(id)");
-                graph.execute("CREATE INDEX ON :person(name)");
-                graph.execute("CREATE INDEX ON :person(age)");
-                graph.execute("CREATE INDEX ON :software(id)");
-                graph.execute("CREATE INDEX ON :software(name)");
-                graph.execute("CREATE INDEX ON :software(lang)");
+                graph.createIndex("person", "id");
+                graph.createIndex("person", "name");
+                graph.createIndex("person", "age");
+                graph.createIndex("software", "id");
+                graph.createIndex("software", "name");
+                graph.createIndex("software", "lang");
                 break;
             case CLASSIC:
                 // create indexes
-                graph.execute("CREATE INDEX ON :vertex(name)");
-                graph.execute("CREATE INDEX ON :vertex(age)");
-                graph.execute("CREATE INDEX ON :vertex(lang)");
+                graph.createIndex("vertex", "name");
+                graph.createIndex("vertex", "age");
+                graph.createIndex("vertex", "lang");
                 break;
         }
         // commit transaction
