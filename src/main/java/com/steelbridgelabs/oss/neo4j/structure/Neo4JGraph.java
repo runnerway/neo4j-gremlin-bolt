@@ -162,8 +162,13 @@ public class Neo4JGraph implements Graph {
         return session;
     }
 
-    String[] getPartition() {
-        return partition;
+    /**
+     * Gets the partition labels that has been applied to current {@link Neo4JGraph}.
+     *
+     * @return The partition labels.
+     */
+    public String[] getPartition() {
+        return partition.clone();
     }
 
     /**
