@@ -168,7 +168,7 @@ public class Neo4JGraph implements Graph {
      * @return The partition labels.
      */
     public String[] getPartition() {
-        return partition;
+        return partition.clone();
     }
 
     /**
