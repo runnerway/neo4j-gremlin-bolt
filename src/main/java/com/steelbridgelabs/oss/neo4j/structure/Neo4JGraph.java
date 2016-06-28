@@ -103,12 +103,12 @@ public class Neo4JGraph implements Graph {
     private final Neo4JTransaction transaction = new Neo4JTransaction();
 
     /**
-     * Creates a {@see Neo4JGraph} instance
+     * Creates a {@link Neo4JGraph} instance.
      *
-     * @param driver             The {@see Driver} instance with the database connection information.
-     * @param vertexIdProvider   The {@see Neo4JElementIdProvider} for the {@see Vertex} id generation.
-     * @param edgeIdProvider     The {@see Neo4JElementIdProvider} for the {@see Edge} id generation.
-     * @param propertyIdProvider The {@see Neo4JElementIdProvider} for the {@see VertexProperty} id generation.
+     * @param driver             The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param propertyIdProvider The {@link Neo4JElementIdProvider} for the {@link org.apache.tinkerpop.gremlin.structure.VertexProperty} id generation.
      */
     public Neo4JGraph(Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
         Objects.requireNonNull(driver, "driver cannot be null");
@@ -126,13 +126,13 @@ public class Neo4JGraph implements Graph {
     }
 
     /**
-     * Creates a {@see Neo4JGraph} instance with the given partition within the neo4j database.
+     * Creates a {@link Neo4JGraph} instance with the given partition within the neo4j database.
      *
      * @param partition          The set of labels to create a partition within the neo4j database.
-     * @param driver             The {@see Driver} instance with the database connection information.
-     * @param vertexIdProvider   The {@see Neo4JElementIdProvider} for the {@see Vertex} id generation.
-     * @param edgeIdProvider     The {@see Neo4JElementIdProvider} for the {@see Edge} id generation.
-     * @param propertyIdProvider The {@see Neo4JElementIdProvider} for the {@see VertexProperty} id generation.
+     * @param driver             The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param propertyIdProvider The {@link Neo4JElementIdProvider} for the {@link org.apache.tinkerpop.gremlin.structure.VertexProperty} id generation.
      */
     public Neo4JGraph(String[] partition, Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
         Objects.requireNonNull(partition, "partition cannot be null");
@@ -141,7 +141,7 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
         // partition inside a Neo4J database
-        this.partition = partition;
+        this.partition = partition.clone();
         // store driver instance
         this.driver = driver;
         // store providers
