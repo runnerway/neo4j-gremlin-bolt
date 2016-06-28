@@ -38,6 +38,8 @@ public class Neo4JGraphFactory {
             Config config = Config.build()
                 .withMaxSessions(configuration.getInt(Neo4JGraphConfigurationBuilder.Neo4JConnectionPoolSizeConfigurationKey))
                 .toConfig();
+            // graph name
+            String graphName = configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JGraphNameConfigurationKey);
             // create driver instance
             Driver driver = GraphDatabase.driver(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JUrlConfigurationKey), AuthTokens.basic(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JUsernameConfigurationKey), configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JPasswordConfigurationKey)), config);
             // create providers
@@ -45,7 +47,7 @@ public class Neo4JGraphFactory {
             Neo4JElementIdProvider<?> edgeIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JEdgeIdProviderClassNameConfigurationKey));
             Neo4JElementIdProvider<?> propertyIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JPropertyIdProviderClassNameConfigurationKey));
             // create graph instance
-            return new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider);
+            return new Neo4JGraph(graphName != null ? new String[]{graphName} : new String[0], driver, vertexIdProvider, edgeIdProvider, propertyIdProvider);
         }
         catch (Throwable ex) {
             // throw runtime exception

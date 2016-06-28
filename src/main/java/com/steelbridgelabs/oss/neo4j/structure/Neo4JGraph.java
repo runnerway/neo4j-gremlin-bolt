@@ -30,8 +30,6 @@ import org.apache.tinkerpop.gremlin.structure.util.GraphFactoryClass;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Values;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -96,6 +94,7 @@ public class Neo4JGraph implements Graph {
         }
     }
 
+    private final String[] partition;
     private final Driver driver;
     private final Neo4JElementIdProvider<?> vertexIdProvider;
     private final Neo4JElementIdProvider<?> edgeIdProvider;
@@ -103,11 +102,46 @@ public class Neo4JGraph implements Graph {
     private final ThreadLocal<Neo4JSession> session = ThreadLocal.withInitial(() -> null);
     private final Neo4JTransaction transaction = new Neo4JTransaction();
 
+    /**
+     * Creates a {@link Neo4JGraph} instance.
+     *
+     * @param driver             The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param propertyIdProvider The {@link Neo4JElementIdProvider} for the {@link org.apache.tinkerpop.gremlin.structure.VertexProperty} id generation.
+     */
     public Neo4JGraph(Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
         Objects.requireNonNull(driver, "driver cannot be null");
         Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
         Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
+        // no partitions
+        this.partition = new String[0];
+        // store driver instance
+        this.driver = driver;
+        // store providers
+        this.vertexIdProvider = vertexIdProvider;
+        this.edgeIdProvider = edgeIdProvider;
+        this.propertyIdProvider = propertyIdProvider;
+    }
+
+    /**
+     * Creates a {@link Neo4JGraph} instance with the given partition within the neo4j database.
+     *
+     * @param partition          The set of labels to create a partition within the neo4j database.
+     * @param driver             The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param propertyIdProvider The {@link Neo4JElementIdProvider} for the {@link org.apache.tinkerpop.gremlin.structure.VertexProperty} id generation.
+     */
+    public Neo4JGraph(String[] partition, Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
+        Objects.requireNonNull(partition, "partition cannot be null");
+        Objects.requireNonNull(driver, "driver cannot be null");
+        Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
+        Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
+        Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
+        // partition inside a Neo4J database
+        this.partition = partition.clone();
         // store driver instance
         this.driver = driver;
         // store providers
@@ -128,6 +162,10 @@ public class Neo4JGraph implements Graph {
         return session;
     }
 
+    String[] getPartition() {
+        return partition;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -141,35 +179,21 @@ public class Neo4JGraph implements Graph {
         return session.addVertex(keyValues);
     }
 
-    public StatementResult execute(Statement statement) {
-        Objects.requireNonNull(statement, "statement cannot be null");
+    /**
+     * Creates an index in the neo4j database.
+     *
+     * @param label        The label associated with the Index.
+     * @param propertyName The property name associated with the Index.
+     */
+    public void createIndex(String label, String propertyName) {
+        Objects.requireNonNull(label, "label cannot be null");
+        Objects.requireNonNull(propertyName, "propertyName cannot be null");
         // get current session
         Neo4JSession session = currentSession();
         // transaction should be ready for io operations
         transaction.readWrite();
         // execute statement
-        return session.executeStatement(statement);
-    }
-
-    public StatementResult execute(String statement) {
-        Objects.requireNonNull(statement, "statement cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // execute statement
-        return session.executeStatement(new Statement(statement));
-    }
-
-    public StatementResult execute(String statement, Map<String, Object> parameters) {
-        Objects.requireNonNull(statement, "statement cannot be null");
-        Objects.requireNonNull(parameters, "parameters cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // execute statement
-        return session.executeStatement(new Statement(statement, Values.value(parameters)));
+        session.executeStatement(new Statement("CREATE INDEX ON :`" + label + "`(" + propertyName + ")"));
     }
 
     /**
