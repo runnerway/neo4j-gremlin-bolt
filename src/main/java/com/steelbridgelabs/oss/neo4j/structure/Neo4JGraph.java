@@ -105,6 +105,29 @@ public class Neo4JGraph implements Graph {
     /**
      * Creates a {@see Neo4JGraph} instance
      *
+     * @param driver             The {@see Driver} instance with the database connection information.
+     * @param vertexIdProvider   The {@see Neo4JElementIdProvider} for the {@see Vertex} id generation.
+     * @param edgeIdProvider     The {@see Neo4JElementIdProvider} for the {@see Edge} id generation.
+     * @param propertyIdProvider The {@see Neo4JElementIdProvider} for the {@see VertexProperty} id generation.
+     */
+    public Neo4JGraph(Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
+        Objects.requireNonNull(driver, "driver cannot be null");
+        Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
+        Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
+        Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
+        // no partitions
+        this.partition = new String[0];
+        // store driver instance
+        this.driver = driver;
+        // store providers
+        this.vertexIdProvider = vertexIdProvider;
+        this.edgeIdProvider = edgeIdProvider;
+        this.propertyIdProvider = propertyIdProvider;
+    }
+
+    /**
+     * Creates a {@see Neo4JGraph} instance with the given partition within the neo4j database.
+     *
      * @param partition          The set of labels to create a partition within the neo4j database.
      * @param driver             The {@see Driver} instance with the database connection information.
      * @param vertexIdProvider   The {@see Neo4JElementIdProvider} for the {@see Vertex} id generation.
