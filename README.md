@@ -21,20 +21,6 @@ Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to
     </dependency>
 ```
 
-### Gradle
-
-```xml
-    dependencies {
-        compile 'com.steelbridgelabs.oss:neo4j-gremlin-bolt:{version}'
-    }
-```
-
-### Ivy
-
-```xml
-    <dependency org="com.steelbridgelabs.oss" name="neo4j-gremlin-bolt" rev="{version}" />
-```
-
 *Please check the [Releases](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/releases) for the latest version available.
 
 ## License
