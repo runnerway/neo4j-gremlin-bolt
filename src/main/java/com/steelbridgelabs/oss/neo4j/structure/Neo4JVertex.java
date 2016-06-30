@@ -424,7 +424,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // process where clause
                 processEdgesWhereClause(labels, identifiers, "r", builder, parameters);
                 // return
-                builder.append(" return n, r, m");
+                builder.append(" RETURN n, r, m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
                 // execute command
@@ -455,7 +455,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // process where clause
             processEdgesWhereClause(labels, identifiers, "r", builder, parameters);
             // return
-            builder.append(" return n, r, m");
+            builder.append(" RETURN n, r, m");
             // create statement
             Statement statement = new Statement(builder.toString(), parameters);
             // execute command
@@ -505,7 +505,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // process where clause
                 processEdgesWhereClause(labels, identifiers, "r", builder, parameters);
                 // return
-                builder.append(" return m");
+                builder.append(" RETURN m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
                 // execute command
@@ -533,7 +533,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // process where clause
                 processEdgesWhereClause(labels, identifiers, "r", builder, parameters);
                 // return
-                builder.append(" return m");
+                builder.append(" RETURN m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
                 // execute command
@@ -559,7 +559,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // process where clause
             processEdgesWhereClause(labels, identifiers, "r", builder, parameters);
             // return
-            builder.append(" return m");
+            builder.append(" RETURN m");
             // create statement
             Statement statement = new Statement(builder.toString(), parameters);
             // execute command

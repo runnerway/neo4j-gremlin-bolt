@@ -751,11 +751,11 @@ class Neo4JSession {
     }
 
     public void close() {
+        // close transaction
+        closeTransaction();
         // log information
         if (logger.isDebugEnabled())
             logger.debug("Closing neo4j session [{}]", session.hashCode());
-        // close transaction
-        closeTransaction();
         // close session
         session.close();
     }
