@@ -21,11 +21,11 @@ limitations under the License.
     <parent>
         <artifactId>parent-oss</artifactId>
         <groupId>com.steelbridgelabs.oss</groupId>
-        <version>0.0.6</version>
+        <version>0.0.9</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-gremlin-bolt</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.2</version>
     <packaging>jar</packaging>
     <name>SteelBridge Labs Neo4J Gremlin (Bolt) integration</name>
     <description>SteelBridge Labs Neo4J Gremlin (Bolt) integration</description>
@@ -55,8 +55,6 @@ limitations under the License.
         <url>https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt.git</url>
     </scm>
     <properties>
-        <!-- skip test for now -->
-        <!--maven.test.skip>true</maven.test.skip-->
         <!-- neo4j -->
         <neo4j.version>1.0.3</neo4j.version>
         <!-- gremlin -->
@@ -67,6 +65,8 @@ limitations under the License.
         <logback-classic.version>1.1.7</logback-classic.version>
         <!-- junit -->
         <junit.version>4.12</junit.version>
+        <!-- mockito -->
+        <mockito-all.version>1.10.19</mockito-all.version>
     </properties>
     <dependencies>
         <!-- gremlin -->
@@ -114,7 +114,8 @@ limitations under the License.
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <version>${mockito-all.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <profiles>
@@ -173,7 +174,6 @@ limitations under the License.
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>1.10</version>
                         <executions>
                             <execution>
                                 <id>add-test-source</id>
@@ -239,6 +239,16 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <!-- coverall -->
+            <plugin>
+                <groupId>org.eluder.coveralls</groupId>
+                <artifactId>coveralls-maven-plugin</artifactId>
+            </plugin>
+            <!-- test coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

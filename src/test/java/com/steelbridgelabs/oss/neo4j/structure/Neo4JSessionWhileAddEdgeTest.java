@@ -23,30 +23,40 @@ import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.types.Relationship;
 
 /**
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JSessionWhileAddEdge {
+public class Neo4JSessionWhileAddEdgeTest {
+
+    @Mock
+    private Neo4JGraph graph;
+
+    @Mock
+    private Neo4JVertex outVertex;
+
+    @Mock
+    private Neo4JVertex inVertex;
+
+    @Mock
+    private Neo4JElementIdProvider provider;
 
     @Test
     public void givenEmptyKeyValuePairsShouldCreateVEdgeWithLabel() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
-        Neo4JVertex out = Mockito.mock(Neo4JVertex.class);
-        Neo4JVertex in = Mockito.mock(Neo4JVertex.class);
         // act
-        Neo4JEdge edge = session.addEdge("label1", out, in);
+        Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex);
         // assert
         Assert.assertNotNull("Failed to create edge", edge);
         Assert.assertEquals("Failed to assign edge label", "label1", edge.label());
@@ -55,17 +65,13 @@ public class Neo4JSessionWhileAddEdge {
     @Test
     public void givenEmptyKeyValuePairsShouldCreateEdgeWithId() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
-        Neo4JVertex out = Mockito.mock(Neo4JVertex.class);
-        Neo4JVertex in = Mockito.mock(Neo4JVertex.class);
         // act
-        Neo4JEdge edge = session.addEdge("label1", out, in);
+        Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex);
         // assert
         Assert.assertNotNull("Failed to create edge", edge);
         Assert.assertEquals("Failed to assign edge id", 1L, edge.id());
@@ -74,17 +80,13 @@ public class Neo4JSessionWhileAddEdge {
     @Test
     public void givenKeyValuePairsShouldCreateEdgeWithProperties() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
-        Neo4JVertex out = Mockito.mock(Neo4JVertex.class);
-        Neo4JVertex in = Mockito.mock(Neo4JVertex.class);
         // act
-        Neo4JEdge edge = session.addEdge("label1", out, in, "k1", "v1", "k2", 2L, "k3", true);
+        Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex, "k1", "v1", "k2", 2L, "k3", true);
         // assert
         Assert.assertNotNull("Failed to create edge", edge);
         Assert.assertNotNull("Failed to assign edge property", edge.property("k1"));

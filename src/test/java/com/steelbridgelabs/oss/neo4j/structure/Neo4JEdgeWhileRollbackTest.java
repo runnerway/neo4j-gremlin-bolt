@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Values;
@@ -35,22 +36,32 @@ import java.util.Collections;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JEdgeWhileRollback {
+public class Neo4JEdgeWhileRollbackTest {
+
+    @Mock
+    private Neo4JGraph graph;
+
+    @Mock
+    private Neo4JSession session;
+
+    @Mock
+    private Neo4JVertex outVertex;
+
+    @Mock
+    private Neo4JVertex inVertex;
+
+    @Mock
+    private Relationship relationship;
 
     @Test
     public void givenStringPropertyShouldRollbackToOriginalValue() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
-        Neo4JSession session = Mockito.mock(Neo4JSession.class);
-        Neo4JVertex out = Mockito.mock(Neo4JVertex.class);
-        Neo4JVertex in = Mockito.mock(Neo4JVertex.class);
-        Relationship relationship = Mockito.mock(Relationship.class);
         Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(relationship.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Neo4JEdge edge = new Neo4JEdge(graph, session, "id", out, relationship, in);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, "id", outVertex, relationship, inVertex);
         edge.property("key1", "value2");
         // act
         edge.rollback();
@@ -63,17 +74,12 @@ public class Neo4JEdgeWhileRollback {
     @Test
     public void givenDirtyEdgeShouldRollbackToOriginalState() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
         Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
-        Neo4JSession session = Mockito.mock(Neo4JSession.class);
-        Neo4JVertex out = Mockito.mock(Neo4JVertex.class);
-        Neo4JVertex in = Mockito.mock(Neo4JVertex.class);
-        Relationship relationship = Mockito.mock(Relationship.class);
         Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(relationship.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Neo4JEdge edge = new Neo4JEdge(graph, session, "id", out, relationship, in);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, "id", outVertex, relationship, inVertex);
         edge.property("key1", "value2");
         // act
         edge.rollback();

@@ -10,5 +10,6 @@ cache:
     directories:
         - ~/.m2/repository
 after_success:
+    - mvn clean test jacoco:report coveralls:report
     - .travis/before-deploy.sh
     - .travis/deploy.sh
