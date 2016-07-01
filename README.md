@@ -27,7 +27,7 @@ Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to
     </dependency>
 ```
 
-*Please check the [Releases](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/releases) for the latest version available.
+*Please check the [Maven Central](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/) for the latest version available.
 
 ## License
 
