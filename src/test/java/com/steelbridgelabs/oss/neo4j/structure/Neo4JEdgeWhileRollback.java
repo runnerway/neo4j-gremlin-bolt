@@ -31,6 +31,9 @@ import org.neo4j.driver.v1.types.Relationship;
 
 import java.util.Collections;
 
+/**
+ * @author Rogelio J. Baucells
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class Neo4JEdgeWhileRollback {
 
