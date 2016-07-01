@@ -31,6 +31,9 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Session;
 
+/**
+ * @author Rogelio J. Baucells
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class Neo4JSessionWhileAddVertex {
 

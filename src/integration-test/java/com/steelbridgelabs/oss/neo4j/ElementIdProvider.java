@@ -24,7 +24,6 @@ import com.steelbridgelabs.oss.neo4j.structure.Neo4JElementIdProvider;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- *
  * @author Rogelio J. Baucells
  */
 public class ElementIdProvider implements Neo4JElementIdProvider<Long> {
