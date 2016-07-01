@@ -30,7 +30,7 @@ import org.neo4j.driver.v1.Driver;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class DatabaseSequenceElementIdProviderWhileGettingIdFieldName {
+public class DatabaseSequenceElementIdProviderWhileGettingIdFieldNameTest {
 
     @Test
     public void givenNoIdFieldNameShouldUseDefaultValue() {

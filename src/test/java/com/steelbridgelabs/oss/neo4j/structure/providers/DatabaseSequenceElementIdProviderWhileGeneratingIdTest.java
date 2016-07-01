@@ -36,7 +36,7 @@ import org.neo4j.driver.v1.Values;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class DatabaseSequenceElementIdProviderWhileGeneratingId {
+public class DatabaseSequenceElementIdProviderWhileGeneratingIdTest {
 
     @Test
     public void givenANewProviderShouldRequestPoolOfIdentifiers() {

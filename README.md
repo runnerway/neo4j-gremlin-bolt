@@ -6,6 +6,12 @@ This project allows the use of the [Apache Tinkerpop](http://tinkerpop.apache.or
 
 [![Build Status](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt.svg?branch=master)](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt)
 [![Coverage Status](https://coveralls.io/repos/github/SteelBridgeLabs/neo4j-gremlin-bolt/badge.svg?branch=master)](https://coveralls.io/github/SteelBridgeLabs/neo4j-gremlin-bolt?branch=master)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/)
+
+## Requirements
+
+* Java 8.
+* Maven 3.0.0 or newer.
 
 ## Usage
 
@@ -31,14 +37,14 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 ## Connecting to the database
 
-- Create driver instance, see [neo4j-java-driver](https://github.com/neo4j/neo4j-java-driver) for more information.
+* Create driver instance, see [neo4j-java-driver](https://github.com/neo4j/neo4j-java-driver) for more information.
 
 ```java
     // create driver instance
     Driver driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic("neo4j", "neo4j"));
 ```
 
-- Create id provider instances, see providers for more information. 
+* Create id provider instances, see providers for more information. 
 
 ```java
     // create id provider instances
@@ -47,7 +53,7 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
     propertyIdProvider = ...
 ```
 
-- Create [Graph](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Graph.html) instance.
+* Create [Graph](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Graph.html) instance.
 
 ```java
     // create graph instance
@@ -58,7 +64,7 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 ## Working with transactions
 
-- Obtain a [Transaction](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Transaction.html) instance from current Graph.
+* Obtain a [Transaction](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Transaction.html) instance from current Graph.
 
 ```java
     // create graph instance

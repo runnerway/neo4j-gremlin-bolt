@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Session;
@@ -35,15 +36,28 @@ import org.neo4j.driver.v1.Session;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JSessionWhileAddVertex {
+public class Neo4JSessionWhileAddVertexTest {
+
+    @Mock
+    private Neo4JGraph graph;
+
+    @Mock
+    private Transaction transaction;
+
+    @Mock
+    private Neo4JElementIdProvider provider;
+
+    @Mock
+    private Graph.Features.VertexFeatures vertexFeatures;
+
+    @Mock
+    private Graph.Features features;
 
     @Test
     public void givenEmptyKeyValuePairsShouldCreateVertexWithDefaultLabel() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
@@ -57,10 +71,8 @@ public class Neo4JSessionWhileAddVertex {
     @Test
     public void givenEmptyKeyValuePairsShouldCreateVertexWithId() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
@@ -74,10 +86,8 @@ public class Neo4JSessionWhileAddVertex {
     @Test
     public void givenLabelShouldCreateVertex() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
@@ -91,10 +101,8 @@ public class Neo4JSessionWhileAddVertex {
     @Test
     public void givenLabelsShouldCreateVertex() {
         // arrange
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
@@ -109,15 +117,11 @@ public class Neo4JSessionWhileAddVertex {
     @Test
     public void givenKeyValuePairsShouldCreateVertexWithProperties() {
         // arrange
-        Graph.Features.VertexFeatures vertexFeatures = Mockito.mock(Graph.Features.VertexFeatures.class);
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
-        Neo4JGraph graph = Mockito.mock(Neo4JGraph.class);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> new String[0]);
-        Graph.Features features = Mockito.mock(Graph.Features.class);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
-        Neo4JElementIdProvider provider = Mockito.mock(Neo4JElementIdProvider.class);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider);
