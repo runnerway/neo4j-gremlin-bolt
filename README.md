@@ -33,6 +33,11 @@ Add the Neo4j [Apache Tinkerpop](http://tinkerpop.apache.org/) implementation to
 
 neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
+## Features
+
+* [Apache Tinkerpop](http://tinkerpop.apache.org/) 3.x Online Transactional Processing Graph Systems (OLTP) support.
+* [neo4j](http://neo4j.com/) implementation on top of the [BOLT](https://github.com/neo4j/neo4j-java-driver) protocol.
+
 # Graph API
 
 ## Connecting to the database
