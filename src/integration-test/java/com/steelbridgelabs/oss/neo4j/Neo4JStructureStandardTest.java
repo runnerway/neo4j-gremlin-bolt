@@ -22,14 +22,12 @@ package com.steelbridgelabs.oss.neo4j;
 import com.steelbridgelabs.oss.neo4j.structure.Neo4JGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 /**
  * @author Rogelio J. Baucells
  */
 @RunWith(StructureStandardSuite.class)
-@Category(IntegrationTest.class)
 @GraphProviderClass(provider = Neo4JTestGraphProvider.class, graph = Neo4JGraph.class)
 public class Neo4JStructureStandardTest {
 

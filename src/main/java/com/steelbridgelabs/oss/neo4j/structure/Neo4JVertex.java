@@ -204,6 +204,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // initialize original properties and cardinalities
         this.originalProperties = new HashMap<>();
         this.originalCardinalities = new HashMap<>();
+        // this is a new vertex, everything is in memory
+        outEdgesLoaded = true;
+        inEdgesLoaded = true;
     }
 
     Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Node node) {
@@ -275,7 +278,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return labels.toArray(new String[labels.size()]);
     }
 
-    public void addLabel(String label) {
+    public boolean addLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
         // exclude partition
         if (partition.containsLabel(label))
@@ -286,10 +289,13 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             session.dirtyVertex(this);
             // we need to update labels
             labelsAdded.add(label);
+            // indicate label was added
+            return true;
         }
+        return false;
     }
 
-    public void removeLabel(String label) {
+    public boolean removeLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
         // exclude partition
         if (partition.containsLabel(label))
@@ -306,7 +312,10 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // we need to update labels
                 labelsRemoved.add(label);
             }
+            // indicate label was removed
+            return true;
         }
+        return false;
     }
 
     /**
@@ -330,7 +339,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     @Override
     public boolean isDirty() {
-        return dirty;
+        return dirty || !labelsAdded.isEmpty() || !labelsRemoved.isEmpty();
     }
 
     /**
