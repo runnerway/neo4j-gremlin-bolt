@@ -37,7 +37,7 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 * [Apache Tinkerpop](http://tinkerpop.apache.org/) 3.x Online Transactional Processing Graph Systems (OLTP) support.
 * [neo4j](http://neo4j.com/) implementation on top of the [BOLT](https://github.com/neo4j/neo4j-java-driver) protocol.
-* Support for [Graph partitioning](neo4j-gremlin-bolt/src/main/java/com/steelbridgelabs/oss/neo4j/structure/Neo4JReadPartition.java), out of the box implementation for All labels and Any label partitions.
+* Support for [Graph partitioning](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/blob/master/src/main/java/com/steelbridgelabs/oss/neo4j/structure/Neo4JReadPartition.java), out of the box implementation for All labels and Any label partitions.
 
 # Graph API
 
