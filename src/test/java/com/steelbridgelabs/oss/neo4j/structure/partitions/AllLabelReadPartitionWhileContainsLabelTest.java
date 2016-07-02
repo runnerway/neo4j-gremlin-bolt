@@ -23,21 +23,28 @@ import com.steelbridgelabs.oss.neo4j.structure.Neo4JReadPartition;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Set;
-
 /**
  * @author Rogelio J. Baucells
  */
-public class AnyLabelReadPartitionWhileVertexMatchPatternLabels {
+public class AllLabelReadPartitionWhileContainsLabelTest {
 
     @Test
-    public void givenPartitionShouldReturnVertexMatchPatternLabels() {
+    public void givenLabelInPartitionShouldReturnTrue() {
         // arrange
-        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
+        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
         // act
-        Set<String> result = partition.vertexMatchPatternLabels();
+        boolean result = partition.containsLabel("l1");
         // assert
-        Assert.assertNotNull("Invalid vertex match pattern labels", result);
-        Assert.assertTrue("Failed to generate vertex match pattern labels", result.isEmpty());
+        Assert.assertTrue("Failed to find label in partition", result);
+    }
+
+    @Test
+    public void givenLabelOutsidePartitionShouldReturnFalse() {
+        // arrange
+        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
+        // act
+        boolean result = partition.containsLabel("l4");
+        // assert
+        Assert.assertFalse("Failed to detect label outside partition", result);
     }
 }

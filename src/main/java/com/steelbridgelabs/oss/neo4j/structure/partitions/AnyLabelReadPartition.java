@@ -29,6 +29,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * This {@link Neo4JReadPartition} implementation creates a {@link org.apache.tinkerpop.gremlin.structure.Graph} partition
+ * where all {@link org.apache.tinkerpop.gremlin.structure.Vertex} in graph contain at least one of the partition labels.
+ *
  * @author Rogelio J. Baucells
  */
 public class AnyLabelReadPartition implements Neo4JReadPartition {
@@ -41,6 +44,12 @@ public class AnyLabelReadPartition implements Neo4JReadPartition {
         this.labels = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(labels)));
     }
 
+    /**
+     * Checks if the partition has the given label.
+     *
+     * @param label The label to check in the partition.
+     * @return <code>true</code> if the label is in the partition, otherwise <code>false</code>.
+     */
     @Override
     public boolean containsLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
@@ -48,6 +57,13 @@ public class AnyLabelReadPartition implements Neo4JReadPartition {
         return labels.contains(label);
     }
 
+    /**
+     * Checks if the partition has the given vertex (labels in vertex). This implementation enforces at least one
+     * of the labels in partition is present in vertex.
+     *
+     * @param labels The label to check in the partition.
+     * @return <code>true</code> if the vertex is in the partition, otherwise <code>false</code>.
+     */
     @Override
     public boolean containsVertex(Set<String> labels) {
         Objects.requireNonNull(labels, "labels cannot be null");
@@ -55,12 +71,27 @@ public class AnyLabelReadPartition implements Neo4JReadPartition {
         return this.labels.stream().anyMatch(labels::contains);
     }
 
+    /**
+     * Gets the set of labels required at the time of matching the vertex in a Cypher MATCH pattern. This implementation
+     * returns a single label if partition contains a single label, otherwise an empty set (predicate required to match vertices).
+     *
+     * @return The set of labels.
+     */
     @Override
     public Set<String> vertexMatchPatternLabels() {
         // use match pattern if only one label in partition
         return labels.size() == 1 ? labels : Collections.emptySet();
     }
 
+    /**
+     * Generates a {@link org.apache.tinkerpop.gremlin.structure.Vertex} Cypher MATCH predicate, example:
+     * <p>
+     * (alias:Label1 OR alias:Label2)
+     * </p>
+     *
+     * @param alias The vertex alias in the MATCH Cypher statement.
+     * @return The Cypher MATCH predicate if required by the vertex, otherwise <code>null</code>.
+     */
     @Override
     public String generateVertexMatchPredicate(String alias) {
         Objects.requireNonNull(alias, "alias cannot be null");

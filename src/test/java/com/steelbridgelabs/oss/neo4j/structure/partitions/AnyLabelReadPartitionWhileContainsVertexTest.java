@@ -30,12 +30,12 @@ import java.util.HashSet;
 /**
  * @author Rogelio J. Baucells
  */
-public class AllLabelReadPartitionWhileContainsVertex {
+public class AnyLabelReadPartitionWhileContainsVertexTest {
 
     @Test
     public void givenVertexWithAllLabelsInPartitionShouldReturnTrue() {
         // arrange
-        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
+        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
         boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2", "l3")));
         // assert
@@ -43,19 +43,19 @@ public class AllLabelReadPartitionWhileContainsVertex {
     }
 
     @Test
-    public void givenVertexWithSomeLabelsInPartitionShouldReturnFalse() {
+    public void givenVertexWithSomeLabelsInPartitionShouldReturnTrue() {
         // arrange
-        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
+        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
         boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2")));
         // assert
-        Assert.assertFalse("Failed to detect vertex labels are not in partition", result);
+        Assert.assertTrue("Failed to detect vertex labels are in partition", result);
     }
 
     @Test
     public void givenVertexWithoutLabelsShouldReturnFalse() {
         // arrange
-        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
+        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
         boolean result = partition.containsVertex(Collections.emptySet());
         // assert

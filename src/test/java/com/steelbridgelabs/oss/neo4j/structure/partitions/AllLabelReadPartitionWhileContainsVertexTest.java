@@ -24,21 +24,41 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Collections;
+import java.util.HashSet;
 
 /**
  * @author Rogelio J. Baucells
  */
-public class AllLabelReadPartitionWhileVertexMatchPatternLabels {
+public class AllLabelReadPartitionWhileContainsVertexTest {
 
     @Test
-    public void givenPartitionShouldReturnVertexMatchPatternLabels() {
+    public void givenVertexWithAllLabelsInPartitionShouldReturnTrue() {
         // arrange
         Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
         // act
-        Set<String> result = partition.vertexMatchPatternLabels();
+        boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2", "l3")));
         // assert
-        Assert.assertNotNull("Invalid vertex match pattern labels", result);
-        Assert.assertTrue("Failed to generate vertex match pattern labels", result.containsAll(Arrays.asList("l3", "l1", "l2")));
+        Assert.assertTrue("Failed to detect vertex labels are in partition", result);
+    }
+
+    @Test
+    public void givenVertexWithSomeLabelsInPartitionShouldReturnFalse() {
+        // arrange
+        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
+        // act
+        boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2")));
+        // assert
+        Assert.assertFalse("Failed to detect vertex labels are not in partition", result);
+    }
+
+    @Test
+    public void givenVertexWithoutLabelsShouldReturnFalse() {
+        // arrange
+        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
+        // act
+        boolean result = partition.containsVertex(Collections.emptySet());
+        // assert
+        Assert.assertFalse("Failed to detect vertex labels are not in partition", result);
     }
 }

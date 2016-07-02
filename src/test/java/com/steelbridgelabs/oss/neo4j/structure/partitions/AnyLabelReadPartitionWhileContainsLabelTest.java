@@ -23,42 +23,28 @@ import com.steelbridgelabs.oss.neo4j.structure.Neo4JReadPartition;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-
 /**
  * @author Rogelio J. Baucells
  */
-public class AnyLabelReadPartitionWhileContainsVertex {
+public class AnyLabelReadPartitionWhileContainsLabelTest {
 
     @Test
-    public void givenVertexWithAllLabelsInPartitionShouldReturnTrue() {
+    public void givenLabelInPartitionShouldReturnTrue() {
         // arrange
         Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
-        boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2", "l3")));
+        boolean result = partition.containsLabel("l1");
         // assert
-        Assert.assertTrue("Failed to detect vertex labels are in partition", result);
+        Assert.assertTrue("Failed to find label in partition", result);
     }
 
     @Test
-    public void givenVertexWithSomeLabelsInPartitionShouldReturnTrue() {
+    public void givenLabelOutsidePartitionShouldReturnFalse() {
         // arrange
         Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
-        boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2")));
+        boolean result = partition.containsLabel("l4");
         // assert
-        Assert.assertTrue("Failed to detect vertex labels are in partition", result);
-    }
-
-    @Test
-    public void givenVertexWithoutLabelsShouldReturnFalse() {
-        // arrange
-        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
-        // act
-        boolean result = partition.containsVertex(Collections.emptySet());
-        // assert
-        Assert.assertFalse("Failed to detect vertex labels are not in partition", result);
+        Assert.assertFalse("Failed to detect label outside partition", result);
     }
 }

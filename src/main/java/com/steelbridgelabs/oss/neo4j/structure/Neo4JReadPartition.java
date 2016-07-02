@@ -26,10 +26,27 @@ import java.util.Set;
  */
 public interface Neo4JReadPartition {
 
+    /**
+     * Checks if the partition has the given label.
+     *
+     * @param label The label to check in the partition.
+     * @return <code>true</code> if the label is in the partition, otherwise <code>false</code>.
+     */
     boolean containsLabel(String label);
 
+    /**
+     * Checks if the partition has the given vertex (labels in vertex).
+     *
+     * @param labels The label to check in the partition.
+     * @return <code>true</code> if the vertex is in the partition, otherwise <code>false</code>.
+     */
     boolean containsVertex(Set<String> labels);
 
+    /**
+     * Gets the set of labels required at the time of matching the vertex in a Cypher MATCH pattern.
+     *
+     * @return The set of labels.
+     */
     Set<String> vertexMatchPatternLabels();
 
     /**
