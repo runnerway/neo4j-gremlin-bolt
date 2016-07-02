@@ -31,10 +31,14 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Statement;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +48,29 @@ import java.util.stream.Collectors;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @GraphFactoryClass(Neo4JGraphFactory.class)
 public class Neo4JGraph implements Graph {
+
+    private static class NoLabelReadPartition implements Neo4JReadPartition {
+
+        @Override
+        public boolean containsLabel(String label) {
+            return false;
+        }
+
+        @Override
+        public boolean containsVertex(Set<String> labels) {
+            return true;
+        }
+
+        @Override
+        public Set<String> vertexMatchPatternLabels() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public String generateVertexMatchPredicate(String alias) {
+            return null;
+        }
+    }
 
     private class Neo4JTransaction extends AbstractThreadLocalTransaction {
 
@@ -94,7 +121,8 @@ public class Neo4JGraph implements Graph {
         }
     }
 
-    private final String[] partition;
+    private final Neo4JReadPartition partition;
+    private final Set<String> vertexLabels;
     private final Driver driver;
     private final Neo4JElementIdProvider<?> vertexIdProvider;
     private final Neo4JElementIdProvider<?> edgeIdProvider;
@@ -115,8 +143,9 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
         Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
-        // no partitions
-        this.partition = new String[0];
+        // no label partition
+        this.partition = new NoLabelReadPartition();
+        this.vertexLabels = Collections.emptySet();
         // store driver instance
         this.driver = driver;
         // store providers
@@ -128,21 +157,23 @@ public class Neo4JGraph implements Graph {
     /**
      * Creates a {@link Neo4JGraph} instance with the given partition within the neo4j database.
      *
-     * @param partition          The set of labels to create a partition within the neo4j database.
+     * @param partition          The {@link Neo4JReadPartition} within the neo4j database.
+     * @param vertexLabels       The set of labels to append to vertices created by the {@link Neo4JGraph} session.
      * @param driver             The {@link Driver} instance with the database connection information.
      * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
      * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
      * @param propertyIdProvider The {@link Neo4JElementIdProvider} for the {@link org.apache.tinkerpop.gremlin.structure.VertexProperty} id generation.
      */
-    public Neo4JGraph(String[] partition, Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
+    public Neo4JGraph(Neo4JReadPartition partition, String[] vertexLabels, Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
         Objects.requireNonNull(partition, "partition cannot be null");
+        Objects.requireNonNull(vertexLabels, "vertexLabels cannot be null");
         Objects.requireNonNull(driver, "driver cannot be null");
         Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
         Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
-        // partition inside a Neo4J database
-        this.partition = partition.clone();
-        // store driver instance
+        // initialize fields
+        this.partition = partition;
+        this.vertexLabels = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(vertexLabels)));
         this.driver = driver;
         // store providers
         this.vertexIdProvider = vertexIdProvider;
@@ -163,12 +194,16 @@ public class Neo4JGraph implements Graph {
     }
 
     /**
-     * Gets the partition labels that has been applied to current {@link Neo4JGraph}.
+     * Gets the {@link Neo4JReadPartition} that has been applied to current {@link Neo4JGraph}.
      *
      * @return The partition labels.
      */
-    public String[] getPartition() {
-        return partition.clone();
+    public Neo4JReadPartition getPartition() {
+        return partition;
+    }
+
+    Set<String> vertexLabels() {
+        return vertexLabels;
     }
 
     /**
