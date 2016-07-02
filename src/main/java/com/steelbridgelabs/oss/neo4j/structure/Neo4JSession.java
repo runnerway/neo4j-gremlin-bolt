@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -54,15 +55,14 @@ import java.util.stream.StreamSupport;
 /**
  * @author Rogelio J. Baucells
  */
-class Neo4JSession {
+class Neo4JSession implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(Neo4JSession.class);
 
     public static final String VertexLabelDelimiter = "::";
 
     private final Neo4JGraph graph;
-    private final Set<String> partition;
-    private final String partitionMatchLabels;
+    private final Neo4JReadPartition partition;
     private final Session session;
     private final Neo4JElementIdProvider<?> vertexIdProvider;
     private final Neo4JElementIdProvider<?> edgeIdProvider;
@@ -96,7 +96,7 @@ class Neo4JSession {
             logger.debug("Creating session [{}]", session.hashCode());
         // store fields
         this.graph = graph;
-        this.partition = new HashSet<>(Arrays.asList(graph.getPartition()));
+        this.partition = graph.getPartition();
         this.session = session;
         this.vertexIdProvider = vertexIdProvider;
         this.edgeIdProvider = edgeIdProvider;
@@ -104,8 +104,6 @@ class Neo4JSession {
         // initialize field ids names
         vertexIdFieldName = vertexIdProvider.idFieldName();
         edgeIdFieldName = edgeIdProvider.idFieldName();
-        // initialize partition match labels if needed
-        partitionMatchLabels = !partition.isEmpty() ? partition.stream().map(label -> "`" + label + "`").collect(Collectors.joining(":")) : null;
     }
 
     public org.neo4j.driver.v1.Transaction beginTransaction() {
@@ -276,11 +274,12 @@ class Neo4JSession {
         return edge;
     }
 
-    private String generateVertexMatch(String alias) {
-        // check graph partition
-        if (partitionMatchLabels != null) {
+    private String generateVertexMatchPattern(String alias) {
+        // get labels from read partition to be applied in vertex patterns
+        Set<String> labels = partition.vertexMatchPatternLabels();
+        if (!labels.isEmpty()) {
             // vertex match within partition
-            return "(" + alias + ":" + partitionMatchLabels + ")";
+            return "(" + alias + labels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("")) + ")";
         }
         // vertex match
         return "(" + alias + ")";
@@ -300,8 +299,10 @@ class Neo4JSession {
                 List<Object> filter = identifiers.stream().filter(id -> !vertices.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
+                    // vertex match predicate
+                    String predicate = partition.generateVertexMatchPredicate("n");
                     // cypher statement
-                    Statement statement = new Statement("MATCH " + generateVertexMatch("n") + " WHERE n." + vertexIdFieldName + " in {ids} RETURN n", Values.parameters("ids", filter));
+                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE n." + vertexIdFieldName + " in {ids}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("ids", filter));
                     // create stream from query
                     Stream<Vertex> query = vertices(statement);
                     // combine stream from memory and query result
@@ -310,8 +311,10 @@ class Neo4JSession {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), Stream.empty());
             }
+            // vertex match predicate
+            String predicate = partition.generateVertexMatchPredicate("n");
             // cypher statement for all vertices
-            Statement statement = new Statement("MATCH " + generateVertexMatch("n") + " RETURN n");
+            Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + (predicate != null ? " WHERE " + predicate : "") + " RETURN n");
             // create stream from query
             Stream<Vertex> query = vertices(statement);
             // combine stream from memory (transient) and query result
@@ -363,8 +366,11 @@ class Neo4JSession {
                 List<Object> filter = identifiers.stream().filter(id -> !edges.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
+                    // vertex match predicates
+                    String outVertexPredicate = partition.generateVertexMatchPredicate("n");
+                    String inVertexPredicate = partition.generateVertexMatchPredicate("m");
                     // cypher statement
-                    Statement statement = new Statement("MATCH " + generateVertexMatch("n") + "-[r]->" + generateVertexMatch("m") + " WHERE r." + edgeIdFieldName + " in {ids} RETURN n, r, m", Values.parameters("ids", filter));
+                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE r." + edgeIdFieldName + " in {ids}" + (outVertexPredicate != null && inVertexPredicate != null ? " AND " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m", Values.parameters("ids", filter));
                     // find edges
                     Stream<Edge> query = edges(statement);
                     // combine stream from memory and query result
@@ -373,8 +379,11 @@ class Neo4JSession {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
             }
+            // vertex match predicates
+            String outVertexPredicate = partition.generateVertexMatchPredicate("n");
+            String inVertexPredicate = partition.generateVertexMatchPredicate("m");
             // cypher statement for all edges in database
-            Statement statement = new Statement("MATCH " + generateVertexMatch("n") + "-[r]->" + generateVertexMatch("m") + " RETURN n, r, m");
+            Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + (outVertexPredicate != null && inVertexPredicate != null ? " WHERE " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m");
             // find edges
             Stream<Edge> query = edges(statement);
             // combine stream from memory (transient) and query result
@@ -508,8 +517,8 @@ class Neo4JSession {
         Object vertexId = node.get(vertexIdFieldName).asObject();
         // check vertex has been deleted
         if (!deletedVertices.contains(vertexId)) {
-            // check node belongs to partition if any
-            if (partition.isEmpty() || StreamSupport.stream(node.labels().spliterator(), false).anyMatch(partition::contains)) {
+            // check node belongs to partition
+            if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
                 // create and register vertex
                 return registerVertex(new Neo4JVertex(graph, this, propertyIdProvider, vertexIdFieldName, node));
             }
@@ -534,8 +543,8 @@ class Neo4JSession {
                 // node ids
                 Object firstNodeId = firstNode.get(vertexIdFieldName).asObject();
                 Object secondNodeId = secondNode.get(vertexIdFieldName).asObject();
-                // check edge has been deleted (one of the vertices was deleted)
-                if (deletedVertices.contains(firstNodeId) || deletedVertices.contains(secondNodeId) || (!partition.isEmpty() && (!StreamSupport.stream(firstNode.labels().spliterator(), false).anyMatch(partition::contains) || !StreamSupport.stream(secondNode.labels().spliterator(), false).anyMatch(partition::contains))))
+                // check edge has been deleted (one of the vertices was deleted) or the vertices are not in the read partition
+                if (deletedVertices.contains(firstNodeId) || deletedVertices.contains(secondNodeId) || !partition.containsVertex(StreamSupport.stream(firstNode.labels().spliterator(), false).collect(Collectors.toSet())) || !partition.containsVertex(StreamSupport.stream(secondNode.labels().spliterator(), false).collect(Collectors.toSet())))
                     return null;
                 // check we have first vertex in memory
                 Neo4JVertex firstVertex = vertices.get(firstNodeId);
@@ -637,12 +646,12 @@ class Neo4JSession {
             deleteVertices();
             // create vertices
             createVertices();
-            // update vertices
-            updateVertices();
             // create edges
             createEdges();
             // update edges
             updateEdges();
+            // update vertices (after edges to be able to locate the vertex if referenced by an edge)
+            updateVertices();
         }
         catch (ClientException ex) {
             // log error
