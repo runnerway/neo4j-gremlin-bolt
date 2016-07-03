@@ -93,7 +93,7 @@ public class AllLabelReadPartition implements Neo4JReadPartition {
      * @return The Cypher MATCH predicate if required by the vertex, otherwise <code>null</code>.
      */
     @Override
-    public String generateVertexMatchPredicate(String alias) {
+    public String vertexMatchPredicate(String alias) {
         return null;
     }
 }

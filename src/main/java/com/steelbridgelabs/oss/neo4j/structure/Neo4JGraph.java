@@ -67,7 +67,7 @@ public class Neo4JGraph implements Graph {
         }
 
         @Override
-        public String generateVertexMatchPredicate(String alias) {
+        public String vertexMatchPredicate(String alias) {
             return null;
         }
     }

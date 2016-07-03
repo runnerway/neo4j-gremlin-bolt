@@ -33,7 +33,7 @@ public class AllLabelReadPartitionWhileVertexMatchPredicateTest {
         // arrange
         Neo4JReadPartition partition = new AllLabelReadPartition("l1");
         // act
-        String result = partition.generateVertexMatchPredicate("alias");
+        String result = partition.vertexMatchPredicate("alias");
         // assert
         Assert.assertNull("Invalid vertex match predicate", result);
     }
@@ -43,7 +43,7 @@ public class AllLabelReadPartitionWhileVertexMatchPredicateTest {
         // arrange
         Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2");
         // act
-        String result = partition.generateVertexMatchPredicate("n");
+        String result = partition.vertexMatchPredicate("n");
         // assert
         Assert.assertNull("Invalid vertex match predicate", result);
     }

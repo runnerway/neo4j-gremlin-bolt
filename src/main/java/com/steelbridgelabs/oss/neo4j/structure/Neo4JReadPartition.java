@@ -58,5 +58,5 @@ public interface Neo4JReadPartition {
      * @param alias The vertex alias in the MATCH Cypher statement.
      * @return The Cypher MATCH predicate if required by the vertex, otherwise <code>null</code>.
      */
-    String generateVertexMatchPredicate(String alias);
+    String vertexMatchPredicate(String alias);
 }

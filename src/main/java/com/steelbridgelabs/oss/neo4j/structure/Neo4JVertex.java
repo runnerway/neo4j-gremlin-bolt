@@ -365,7 +365,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     private void processEdgesWhereClause(String vertexAlias, List<Object> identifiers, String alias, StringBuilder builder, Map<String, Object> parameters) {
         // generate match predicate
-        String predicate = partition.generateVertexMatchPredicate(vertexAlias);
+        String predicate = partition.vertexMatchPredicate(vertexAlias);
         // check identifiers are empty
         if (!identifiers.isEmpty()) {
             // filter edges
@@ -412,7 +412,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // process where clause
                 processEdgesWhereClause("m", identifiers, "r", builder, parameters);
                 // return
-                builder.append(" return n, r, m");
+                builder.append(" RETURN n, r, m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
                 // execute command

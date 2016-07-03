@@ -93,7 +93,7 @@ public class AnyLabelReadPartition implements Neo4JReadPartition {
      * @return The Cypher MATCH predicate if required by the vertex, otherwise <code>null</code>.
      */
     @Override
-    public String generateVertexMatchPredicate(String alias) {
+    public String vertexMatchPredicate(String alias) {
         Objects.requireNonNull(alias, "alias cannot be null");
         // check we require predicate, if only one label in partition we use match pattern
         if (labels.size() != 1) {
