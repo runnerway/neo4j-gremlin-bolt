@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -300,7 +299,7 @@ class Neo4JSession implements AutoCloseable {
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
                     // vertex match predicate
-                    String predicate = partition.generateVertexMatchPredicate("n");
+                    String predicate = partition.vertexMatchPredicate("n");
                     // cypher statement
                     Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE n." + vertexIdFieldName + " in {ids}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("ids", filter));
                     // create stream from query
@@ -312,7 +311,7 @@ class Neo4JSession implements AutoCloseable {
                 return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), Stream.empty());
             }
             // vertex match predicate
-            String predicate = partition.generateVertexMatchPredicate("n");
+            String predicate = partition.vertexMatchPredicate("n");
             // cypher statement for all vertices
             Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + (predicate != null ? " WHERE " + predicate : "") + " RETURN n");
             // create stream from query
@@ -367,8 +366,8 @@ class Neo4JSession implements AutoCloseable {
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
                     // vertex match predicates
-                    String outVertexPredicate = partition.generateVertexMatchPredicate("n");
-                    String inVertexPredicate = partition.generateVertexMatchPredicate("m");
+                    String outVertexPredicate = partition.vertexMatchPredicate("n");
+                    String inVertexPredicate = partition.vertexMatchPredicate("m");
                     // cypher statement
                     Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE r." + edgeIdFieldName + " in {ids}" + (outVertexPredicate != null && inVertexPredicate != null ? " AND " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m", Values.parameters("ids", filter));
                     // find edges
@@ -380,8 +379,8 @@ class Neo4JSession implements AutoCloseable {
                 return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
             }
             // vertex match predicates
-            String outVertexPredicate = partition.generateVertexMatchPredicate("n");
-            String inVertexPredicate = partition.generateVertexMatchPredicate("m");
+            String outVertexPredicate = partition.vertexMatchPredicate("n");
+            String inVertexPredicate = partition.vertexMatchPredicate("m");
             // cypher statement for all edges in database
             Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + (outVertexPredicate != null && inVertexPredicate != null ? " WHERE " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m");
             // find edges

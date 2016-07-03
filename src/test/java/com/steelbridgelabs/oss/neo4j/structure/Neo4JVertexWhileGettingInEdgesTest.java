@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JVertexWhileGettingOutEdgesTest {
+public class Neo4JVertexWhileGettingInEdgesTest {
 
     @Mock
     private Neo4JGraph graph;
@@ -94,10 +94,10 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})-[r]->(m) RETURN n, r, m", Collections.singletonMap("id", 1L))))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})<-[r]-(m) RETURN n, r, m", Collections.singletonMap("id", 1L))))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT);
+        Iterator<Edge> edges = vertex.edges(Direction.IN);
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -124,11 +124,11 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge1.label()).thenAnswer(invocation -> "EL1");
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})-[r]->(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})<-[r]-(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT);
+        Iterator<Edge> edges = vertex.edges(Direction.IN);
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -157,11 +157,11 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge1.label()).thenAnswer(invocation -> "EL");
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL");
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})-[r:`EL`]->(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})<-[r:`EL`]-(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT, "EL");
+        Iterator<Edge> edges = vertex.edges(Direction.IN, "EL");
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -190,11 +190,11 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge1.label()).thenAnswer(invocation -> "EL1");
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})-[r:`EL2`|:`EL1`]->(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})<-[r:`EL2`|:`EL1`]-(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT, "EL1", "EL2");
+        Iterator<Edge> edges = vertex.edges(Direction.IN, "EL1", "EL2");
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -222,11 +222,11 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge1.label()).thenAnswer(invocation -> "EL1");
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})-[r:`EL1`]->(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})<-[r:`EL1`]-(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT, "EL1");
+        Iterator<Edge> edges = vertex.edges(Direction.IN, "EL1");
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -254,11 +254,11 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge1.label()).thenAnswer(invocation -> "EL1");
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})-[r:`EL2`]->(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Stream.empty());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`l1`{id: {id}})<-[r:`EL2`]-(m) WHERE NOT r.id IN {ids} RETURN n, r, m", parameters)))).thenAnswer(invocation -> Stream.empty());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT, "EL2");
+        Iterator<Edge> edges = vertex.edges(Direction.IN, "EL2");
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -280,10 +280,10 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`P1`:`P2`:`l1`{id: {id}})-[r]->(m:`P1`:`P2`) RETURN n, r, m", Collections.singletonMap("id", 1L))))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`P1`:`P2`:`l1`{id: {id}})<-[r]-(m:`P1`:`P2`) RETURN n, r, m", Collections.singletonMap("id", 1L))))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT);
+        Iterator<Edge> edges = vertex.edges(Direction.IN);
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -305,10 +305,10 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`P1`:`l1`{id: {id}})-[r]->(m) WHERE (m:`P1` OR m:`P2`) RETURN n, r, m", Collections.singletonMap("id", 1L))))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
+        Mockito.when(session.edges(Mockito.eq(new Statement("MATCH (n:`P1`:`l1`{id: {id}})<-[r]-(m) WHERE (m:`P1` OR m:`P2`) RETURN n, r, m", Collections.singletonMap("id", 1L))))).thenAnswer(invocation -> Collections.singleton(edge1).stream());
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT);
+        Iterator<Edge> edges = vertex.edges(Direction.IN);
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -327,9 +327,9 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", 1L, Collections.singletonList("l1"));
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT);
+        Iterator<Edge> edges = vertex.edges(Direction.IN);
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -349,9 +349,9 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", 1L, Collections.singletonList("l1"));
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT, "EL2");
+        Iterator<Edge> edges = vertex.edges(Direction.IN, "EL2");
         // assert
         Assert.assertNotNull("Failed to get edge iterator", edges);
         Assert.assertTrue("Edges iterator is empty", edges.hasNext());
@@ -371,9 +371,9 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
         Mockito.when(edge2.id()).thenAnswer(invocation -> 200L);
         Mockito.when(edge2.label()).thenAnswer(invocation -> "EL2");
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", 1L, Collections.singletonList("l1"));
-        vertex.addOutEdge(edge2);
+        vertex.addInEdge(edge2);
         // act
-        Iterator<Edge> edges = vertex.edges(Direction.OUT, "EL1");
+        Iterator<Edge> edges = vertex.edges(Direction.IN, "EL1");
         // assert
         Assert.assertFalse("Edges iterator should be empty", edges.hasNext());
     }
