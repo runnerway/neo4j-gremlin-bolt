@@ -82,7 +82,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     private Neo4JEdge edge2;
 
     @Test
-    public void givenNoLabelsShouldGetEdges() {
+    public void givenNoLabelsShouldGetVertices() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -105,7 +105,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenNoLabelsShouldGetDatabaseAndTransientEdges() {
+    public void givenNoLabelsShouldGetDatabaseAndTransientVertices() {
         // arrange
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("id", 1L);
@@ -138,7 +138,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenLabelShouldGetDatabaseAndTransientEdges() {
+    public void givenLabelShouldGetDatabaseAndTransientVertices() {
         // arrange
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("id", 1L);
@@ -171,7 +171,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenLabelsShouldGetDatabaseAndTransientEdges() {
+    public void givenLabelsShouldGetDatabaseAndTransientVertices() {
         // arrange
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("id", 1L);
@@ -203,7 +203,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenLabelShouldGetDatabaseEdges() {
+    public void givenLabelShouldGetDatabaseVertices() {
         // arrange
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("id", 1L);
@@ -235,7 +235,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenLabelShouldGetTransientEdges() {
+    public void givenLabelShouldGetTransientVertices() {
         // arrange
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("id", 1L);
@@ -267,7 +267,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenNoLabelsAndPartitionMatchPatternShouldGetEdges() {
+    public void givenNoLabelsAndPartitionMatchPatternShouldGetVertices() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -291,7 +291,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenNoLabelsAndPartitionMatchPredicateShouldGetEdges() {
+    public void givenNoLabelsAndPartitionMatchPredicateShouldGetVertices() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -316,7 +316,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenTransientVertexAndNoLabelsShouldGetTransientEdges() {
+    public void givenTransientVertexAndNoLabelsShouldGetTransientVertices() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -338,7 +338,7 @@ public class Neo4JVertexWhileGettingOutEdgesTest {
     }
 
     @Test
-    public void givenTransientVertexAndLabelsShouldGetTransientEdges() {
+    public void givenTransientVertexAndLabelsShouldGetTransientVertices() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
