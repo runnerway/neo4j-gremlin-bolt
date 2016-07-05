@@ -31,7 +31,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Node;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 /**
  * @author Rogelio J. Baucells
@@ -110,7 +112,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void givenLabelInPartitionShouldThrowException() {
+    public void givenLabelInReadPartitionShouldThrowException() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -126,6 +128,28 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
         // act
         vertex.removeLabel("label");
+        // assert
+        Assert.fail("Failed to detect label in partition");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void givenLabelInWritePartitionShouldThrowException() {
+        // arrange
+        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
+        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.eq("label1"))).thenAnswer(invocation -> true);
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(graph.features()).thenAnswer(invocation -> features);
+        Mockito.when(graph.vertexLabels()).thenAnswer(invocation -> new HashSet<>(Arrays.asList("label1", "label2")));
+        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("label1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
+        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        // act
+        vertex.removeLabel("label1");
         // assert
         Assert.fail("Failed to detect label in partition");
     }
