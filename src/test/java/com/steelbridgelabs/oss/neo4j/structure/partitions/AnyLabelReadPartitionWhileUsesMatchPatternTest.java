@@ -23,42 +23,28 @@ import com.steelbridgelabs.oss.neo4j.structure.Neo4JReadPartition;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-
 /**
  * @author Rogelio J. Baucells
  */
-public class AnyLabelReadPartitionWhileContainsVertexTest {
+public class AnyLabelReadPartitionWhileUsesMatchPatternTest {
 
     @Test
-    public void givenVertexWithAllLabelsInPartitionShouldReturnTrue() {
+    public void givenPartitionWithMoreThanOneLabelShouldReturnFalse() {
         // arrange
         Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
-        boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2", "l3")));
+        boolean result = partition.usesMatchPattern();
         // assert
-        Assert.assertTrue("Failed to detect vertex labels are in partition", result);
+        Assert.assertFalse("AnyLabelReadPartition with multiple labels cannot use MATCH pattern", result);
     }
 
     @Test
-    public void givenVertexWithSomeLabelsInPartitionShouldReturnTrue() {
+    public void givenPartitionWithOneLabelShouldReturnTrue() {
         // arrange
-        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
+        Neo4JReadPartition partition = new AnyLabelReadPartition("l1");
         // act
-        boolean result = partition.containsVertex(new HashSet<>(Arrays.asList("l1", "l2")));
+        boolean result = partition.usesMatchPattern();
         // assert
-        Assert.assertTrue("Failed to detect vertex labels are in partition", result);
-    }
-
-    @Test
-    public void givenVertexWithoutLabelsShouldReturnFalse() {
-        // arrange
-        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
-        // act
-        boolean result = partition.containsVertex(Collections.emptySet());
-        // assert
-        Assert.assertFalse("Failed to detect vertex labels are not in partition", result);
+        Assert.assertTrue("AnyLabelReadPartition one label should use MATCH pattern", result);
     }
 }

@@ -23,32 +23,21 @@ import com.steelbridgelabs.oss.neo4j.structure.Neo4JReadPartition;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Set;
 
 /**
  * @author Rogelio J. Baucells
  */
-public class AnyLabelReadPartitionWhileVertexMatchPatternLabelsTest {
+public class AllLabelReadPartitionWhileUsesMatchPatternTest {
 
     @Test
-    public void givenPartitionWithMultipleLabelsShouldReturnVertexMatchPatternLabels() {
+    public void givenPartitionShouldReturnTrue() {
         // arrange
-        Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
+        Neo4JReadPartition partition = new AllLabelReadPartition("l1", "l2", "l3");
         // act
-        Set<String> result = partition.vertexMatchPatternLabels();
+        boolean result = partition.usesMatchPattern();
         // assert
-        Assert.assertNotNull("Invalid vertex match pattern labels", result);
-        Assert.assertTrue("Failed to generate vertex match pattern labels", result.isEmpty());
-    }
-
-    @Test
-    public void givenPartitionWithOneLabelShouldReturnEmptySet() {
-        // arrange
-        Neo4JReadPartition partition = new AnyLabelReadPartition("l1");
-        // act
-        Set<String> result = partition.vertexMatchPatternLabels();
-        // assert
-        Assert.assertNotNull("Invalid vertex match pattern labels", result);
-        Assert.assertTrue("Failed to generate vertex match pattern labels", !result.isEmpty());
+        Assert.assertTrue("Invalid response for AllLabelReadPartition", result);
     }
 }
