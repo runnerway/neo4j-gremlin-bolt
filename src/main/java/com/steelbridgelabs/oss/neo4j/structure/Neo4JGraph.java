@@ -52,8 +52,8 @@ public class Neo4JGraph implements Graph {
     private static class NoLabelReadPartition implements Neo4JReadPartition {
 
         @Override
-        public boolean containsLabel(String label) {
-            return false;
+        public boolean validateLabel(String label) {
+            return true;
         }
 
         @Override
@@ -175,13 +175,16 @@ public class Neo4JGraph implements Graph {
         this.partition = partition;
         this.vertexLabels = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(vertexLabels)));
         this.driver = driver;
+        // validate partition & additional labels
+        if (!partition.containsVertex(this.vertexLabels))
+            throw new IllegalArgumentException("Invalid vertexLabels, vertices created by the graph will not be part of the given partition");
         // store providers
         this.vertexIdProvider = vertexIdProvider;
         this.edgeIdProvider = edgeIdProvider;
         this.propertyIdProvider = propertyIdProvider;
     }
 
-    private Neo4JSession currentSession() {
+    Neo4JSession currentSession() {
         // get current session
         Neo4JSession session = this.session.get();
         if (session == null) {

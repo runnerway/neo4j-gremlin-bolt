@@ -29,22 +29,22 @@ import org.junit.Test;
 public class AnyLabelReadPartitionWhileContainsLabelTest {
 
     @Test
-    public void givenLabelInPartitionShouldReturnTrue() {
+    public void givenLabelInPartitionShouldReturnFalse() {
         // arrange
         Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
-        boolean result = partition.containsLabel("l1");
+        boolean result = partition.validateLabel("l1");
         // assert
-        Assert.assertTrue("Failed to find label in partition", result);
+        Assert.assertFalse("Failed to find label in partition", result);
     }
 
     @Test
-    public void givenLabelOutsidePartitionShouldReturnFalse() {
+    public void givenLabelOutsidePartitionShouldReturnTrue() {
         // arrange
         Neo4JReadPartition partition = new AnyLabelReadPartition("l1", "l2", "l3");
         // act
-        boolean result = partition.containsLabel("l4");
+        boolean result = partition.validateLabel("l4");
         // assert
-        Assert.assertFalse("Failed to detect label outside partition", result);
+        Assert.assertTrue("Failed to detect label outside partition", result);
     }
 }

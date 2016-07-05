@@ -27,12 +27,12 @@ import java.util.Set;
 public interface Neo4JReadPartition {
 
     /**
-     * Checks if the partition has the given label.
+     * Checks the given label can be added/removed to/from a vertex.
      *
-     * @param label The label to check in the partition.
-     * @return <code>true</code> if the label is in the partition, otherwise <code>false</code>.
+     * @param label The label to validate.
+     * @return <code>true</code> if the label can be assigned to a vertex, otherwise <code>false</code>.
      */
-    boolean containsLabel(String label);
+    boolean validateLabel(String label);
 
     /**
      * Checks if the partition has the given vertex (labels in vertex).
@@ -43,7 +43,7 @@ public interface Neo4JReadPartition {
     boolean containsVertex(Set<String> labels);
 
     /**
-     * Gets the set of labels required at the time of matching the vertex in a Cypher MATCH pattern.
+     * Gets the set of labels required at the time of matching a vertex in a Cypher MATCH pattern.
      *
      * @return The set of labels.
      */

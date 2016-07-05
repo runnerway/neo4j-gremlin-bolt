@@ -39,4 +39,6 @@ abstract class Neo4JElement implements Element {
     public abstract Statement deleteStatement();
 
     public abstract boolean isDirty();
+
+    public abstract boolean isTransient();
 }
