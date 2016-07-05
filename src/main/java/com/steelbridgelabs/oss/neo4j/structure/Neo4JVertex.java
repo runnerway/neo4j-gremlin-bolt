@@ -158,7 +158,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         }
     }
 
-    private final Graph graph;
+    private final Neo4JGraph graph;
     private final Neo4JReadPartition partition;
     private final Neo4JSession session;
     private final Neo4JElementIdProvider propertyIdProvider;
@@ -340,6 +340,22 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             return "(" + alias + processLabels(matchLabels, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
         // pattern without alias
         return "(" + processLabels(matchLabels, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
+    }
+
+    /**
+     * Generates a Cypher MATCH predicate for the vertex, example:
+     * <p>
+     * alias:Label1 OR alias:Label2
+     * </p>
+     * This is a shortcut operation for {@link Neo4JReadPartition#vertexMatchPredicate(String)}.
+     *
+     * @param alias The node alias.
+     * @return the Cypher MATCH predicate or <code>null</code> if not required to MATCH the vertex.
+     */
+    public String matchPredicate(String alias) {
+        Objects.requireNonNull(alias, "alias cannot be null");
+        // user graph partition to generate predicate
+        return graph.getPartition().vertexMatchPredicate(alias);
     }
 
     @Override
