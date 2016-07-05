@@ -44,16 +44,16 @@ public class AllLabelReadPartition implements Neo4JReadPartition {
     }
 
     /**
-     * Checks if the partition has the given label.
+     * Checks the given label can be added/removed to/from a vertex.
      *
-     * @param label The label to check in the partition.
-     * @return <code>true</code> if the label is in the partition, otherwise <code>false</code>.
+     * @param label The label to validate.
+     * @return <code>true</code> if the label can be assigned to a vertex, otherwise <code>false</code>.
      */
     @Override
-    public boolean containsLabel(String label) {
+    public boolean validateLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
         // check label is in set
-        return labels.contains(label);
+        return !labels.contains(label);
     }
 
     /**

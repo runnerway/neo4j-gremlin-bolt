@@ -178,6 +178,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private boolean dirty = false;
     private SortedSet<String> matchLabels;
     private SortedSet<String> originalLabels;
+    private Set<String> graphLabels;
     private Map<String, Collection<VertexProperty>> originalProperties;
     private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
@@ -201,6 +202,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.originalLabels = Collections.emptySortedSet();
         // labels used to match vertex in database
         this.matchLabels = Collections.emptySortedSet();
+        // graph labels
+        this.graphLabels = additionalLabels;
         // initialize original properties and cardinalities
         this.originalProperties = new HashMap<>();
         this.originalCardinalities = new HashMap<>();
@@ -224,12 +227,14 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.idFieldName = idFieldName;
         // from node
         this.id = node.get(idFieldName).asObject();
-        // labels, do not store partition as part of labels
-        this.labels = StreamSupport.stream(node.labels().spliterator(), false).filter(label -> !partition.containsLabel(label)).collect(Collectors.toCollection(TreeSet::new));
+        // graph labels (additional & partition labels in original node)
+        this.graphLabels = StreamSupport.stream(node.labels().spliterator(), false).filter(label -> additionalLabels.contains(label) && !partition.validateLabel(label)).collect(Collectors.toSet());
+        // labels, do not store additional && partition labels
+        this.labels = StreamSupport.stream(node.labels().spliterator(), false).filter(label -> !graphLabels.contains(label)).collect(Collectors.toCollection(TreeSet::new));
         // this is the original set of labels
         this.originalLabels = new TreeSet<>(this.labels);
         // labels used to match the vertex in the database
-        this.matchLabels = originalLabels;
+        this.matchLabels = StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toCollection(TreeSet::new));
         // copy properties from node, remove idFieldName from map
         StreamSupport.stream(node.keys().spliterator(), false).filter(key -> idFieldName.compareTo(key) != 0).forEach(key -> {
             // value
@@ -281,7 +286,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public boolean addLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
         // exclude partition
-        if (partition.containsLabel(label))
+        if (!partition.validateLabel(label))
             throw new IllegalArgumentException("Invalid label, label name cannot be the same as Graph partition labels");
         // add label to set
         if (labels.add(label)) {
@@ -298,7 +303,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     public boolean removeLabel(String label) {
         Objects.requireNonNull(label, "label cannot be null");
         // exclude partition
-        if (partition.containsLabel(label))
+        if (!partition.validateLabel(label))
             throw new IllegalArgumentException("Invalid label, label name cannot be removed since it is part of the Graph partition");
         // prevent additional labels from being removed
         if (additionalLabels.contains(label))
@@ -332,14 +337,19 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
         // generate match pattern
         if (alias != null)
-            return "(" + alias + processLabels(matchLabels, false, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
+            return "(" + alias + processLabels(matchLabels, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
         // pattern without alias
-        return "(" + processLabels(matchLabels, false, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
+        return "(" + processLabels(matchLabels, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
     }
 
     @Override
     public boolean isDirty() {
         return dirty || !labelsAdded.isEmpty() || !labelsRemoved.isEmpty();
+    }
+
+    @Override
+    public boolean isTransient() {
+        return originalLabels.isEmpty();
     }
 
     /**
@@ -406,7 +416,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true, false)).append(")");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
                 // edge ids already in memory
                 List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -439,7 +449,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true, false)).append(")");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
                 // edge ids already in memory
                 List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -470,7 +480,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // create string builder
             StringBuilder builder = new StringBuilder();
             // match clause
-            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true, false)).append(")");
+            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
             // edge ids already in memory
             List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
             // process where clause
@@ -520,7 +530,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true, false)).append(")");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
                 // edge ids already in memory
                 List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -548,7 +558,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true, false)).append(")");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
                 // edge ids already in memory
                 List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -574,7 +584,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // create string builder
             StringBuilder builder = new StringBuilder();
             // match clause
-            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true, false)).append(")");
+            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
             // edge ids already in memory
             List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
             // process where clause
@@ -807,17 +817,19 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     @Override
     public Statement insertStatement() {
+        // concat labels with additional labels on insertion
+        SortedSet<String> labels = Stream.concat(this.labels.stream(), additionalLabels.stream()).collect(Collectors.toCollection(TreeSet::new));
         try {
             // create statement
-            String statement = String.format(Locale.US, "CREATE (%s{vp})", processLabels(this.labels, false, true));
+            String statement = String.format(Locale.US, "CREATE (%s{vp})", processLabels(labels, false));
             // parameters
             Value parameters = Values.parameters("vp", statementParameters());
             // command statement
             return new Statement(statement, parameters);
         }
         finally {
-            // to find vertex in database
-            matchLabels = new TreeSet<>(labels);
+            // to find vertex in database (labels + additional labels)
+            matchLabels = labels;
         }
     }
 
@@ -843,12 +855,12 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // check labels were added
             if (!labelsAdded.isEmpty()) {
                 // add labels
-                builder.append(!dirty ? " ON MATCH SET v" : ", v").append(processLabels(labelsAdded, false, false));
+                builder.append(!dirty ? " ON MATCH SET v" : ", v").append(processLabels(labelsAdded, false));
             }
             // check labels were removed
             if (!labelsRemoved.isEmpty()) {
                 // remove labels
-                builder.append("REMOVE v").append(processLabels(labelsRemoved, false, false));
+                builder.append("REMOVE v").append(processLabels(labelsRemoved, false));
             }
             // command statement
             return new Statement(builder.toString(), parameters);
@@ -871,7 +883,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         labelsAdded.clear();
         labelsRemoved.clear();
         originalLabels = new TreeSet<>(labels);
-        matchLabels = originalLabels;
+        matchLabels = Stream.concat(originalLabels.stream(), graphLabels.stream()).collect(Collectors.toCollection(TreeSet::new));
         // update property values
         originalProperties = new HashMap<>(properties);
         originalCardinalities = new HashMap<>(cardinalities);
@@ -885,7 +897,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         labelsRemoved.clear();
         labels.clear();
         labels.addAll(originalLabels);
-        matchLabels = originalLabels;
+        matchLabels = Stream.concat(originalLabels.stream(), graphLabels.stream()).collect(Collectors.toCollection(TreeSet::new));
         // restore property values
         properties.clear();
         cardinalities.clear();
@@ -897,7 +909,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         dirty = false;
     }
 
-    private String processLabels(Set<String> labels, boolean addPartition, boolean addAdditionalLabels) {
+    private String processLabels(Set<String> labels, boolean addPartition) {
         Objects.requireNonNull(labels, "labels cannot be null");
         // check we need to include partition in match
         if (addPartition) {
@@ -905,11 +917,11 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             Set<String> partitionLabels = partition.vertexMatchPatternLabels();
             if (!partitionLabels.isEmpty()) {
                 // make sure partition is in match pattern
-                return Stream.concat(partitionLabels.stream(), Stream.concat(labels.stream(), addAdditionalLabels ? additionalLabels.stream() : Stream.empty())).map(label -> ":`" + label + "`").collect(Collectors.joining(""));
+                return Stream.concat(partitionLabels.stream(), labels.stream()).map(label -> ":`" + label + "`").collect(Collectors.joining(""));
             }
         }
         // labels
-        return Stream.concat(labels.stream(), addAdditionalLabels ? additionalLabels.stream() : Stream.empty()).map(label -> ":`" + label + "`").collect(Collectors.joining(""));
+        return labels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining(""));
     }
 
     /**

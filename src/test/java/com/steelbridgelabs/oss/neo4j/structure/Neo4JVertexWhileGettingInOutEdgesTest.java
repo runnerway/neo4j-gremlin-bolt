@@ -92,6 +92,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -120,6 +121,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         parameters.put("ids", Arrays.asList(200L, 400L));
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -162,6 +164,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         parameters.put("ids", Arrays.asList(200L, 400L));
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -204,6 +207,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         parameters.put("ids", Arrays.asList(200L, 400L));
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -242,6 +246,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         parameters.put("ids", Arrays.asList(200L, 400L));
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -281,6 +286,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         parameters.put("ids", Arrays.asList(200L, 400L));
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -317,6 +323,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(partition.vertexMatchPatternLabels()).thenAnswer(invocation -> new HashSet<>(Arrays.asList("P1", "P2")));
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
@@ -343,6 +350,7 @@ public class Neo4JVertexWhileGettingInOutEdgesTest {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
         Mockito.when(partition.vertexMatchPatternLabels()).thenAnswer(invocation -> Collections.emptySet());
         Mockito.when(partition.vertexMatchPredicate(Mockito.eq("m"))).thenAnswer(invocation -> "(m:`P1` OR m:`P2`)");
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);

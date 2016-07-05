@@ -116,6 +116,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private final Neo4JVertex in;
 
     private boolean dirty = false;
+    private boolean newEdge;
     private Map<String, Neo4JEdgeProperty> originalProperties;
 
     Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
@@ -137,6 +138,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         this.in = in;
         // initialize original properties
         originalProperties = new HashMap<>();
+        // this is a new edge (transient)
+        newEdge = true;
     }
 
     Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
@@ -165,6 +168,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         this.in = in;
         // initialize original properties
         originalProperties = new HashMap<>(properties);
+        // this is a persisted edge
+        newEdge = false;
     }
 
     /**
@@ -211,6 +216,11 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public boolean isDirty() {
         return dirty;
+    }
+
+    @Override
+    public boolean isTransient() {
+        return newEdge;
     }
 
     /**
@@ -325,6 +335,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         originalProperties = new HashMap<>(properties);
         // reset flags
         dirty = false;
+        // this is no longer a transient edge
+        newEdge = false;
     }
 
     void rollback() {
