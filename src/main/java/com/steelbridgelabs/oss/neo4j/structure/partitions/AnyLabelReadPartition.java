@@ -72,6 +72,26 @@ public class AnyLabelReadPartition implements Neo4JReadPartition {
     }
 
     /**
+     * Checks if the partition uses MATCH patterns (see {@link #vertexMatchPatternLabels()}).
+     *
+     * @return <code>true</code> if the partition uses MATCH patterns, otherwise <code>false</code>.
+     */
+    @Override
+    public boolean usesMatchPattern() {
+        return labels.size() == 1;
+    }
+
+    /**
+     * Checks if the partition uses MATCH predicate (see {@link #vertexMatchPredicate(String)}).
+     *
+     * @return <code>true</code> if the partition uses MATCH predicate, otherwise <code>false</code>.
+     */
+    @Override
+    public boolean usesMatchPredicate() {
+        return labels.size() != 1;
+    }
+
+    /**
      * Gets the set of labels required at the time of matching the vertex in a Cypher MATCH pattern. This implementation
      * returns a single label if partition contains a single label, otherwise an empty set (predicate required to match vertices).
      *

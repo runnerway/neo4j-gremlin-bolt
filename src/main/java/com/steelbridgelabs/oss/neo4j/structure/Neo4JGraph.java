@@ -62,6 +62,16 @@ public class Neo4JGraph implements Graph {
         }
 
         @Override
+        public boolean usesMatchPattern() {
+            return false;
+        }
+
+        @Override
+        public boolean usesMatchPredicate() {
+            return false;
+        }
+
+        @Override
         public Set<String> vertexMatchPatternLabels() {
             return Collections.emptySet();
         }

@@ -43,6 +43,20 @@ public interface Neo4JReadPartition {
     boolean containsVertex(Set<String> labels);
 
     /**
+     * Checks if the partition uses MATCH patterns (see {@link #vertexMatchPatternLabels()}).
+     *
+     * @return <code>true</code> if the partition uses MATCH patterns, otherwise <code>false</code>.
+     */
+    boolean usesMatchPattern();
+
+    /**
+     * Checks if the partition uses MATCH predicate (see {@link #vertexMatchPredicate(String)}).
+     *
+     * @return <code>true</code> if the partition uses MATCH predicate, otherwise <code>false</code>.
+     */
+    boolean usesMatchPredicate();
+
+    /**
      * Gets the set of labels required at the time of matching a vertex in a Cypher MATCH pattern.
      *
      * @return The set of labels.
