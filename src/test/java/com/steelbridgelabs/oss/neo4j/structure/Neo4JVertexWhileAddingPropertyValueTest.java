@@ -31,15 +31,14 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Node;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JVertexWhileRemovingLabelTest {
+public class Neo4JVertexWhileAddingPropertyValueTest {
 
     @Mock
     private Neo4JGraph graph;
@@ -66,7 +65,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
     private Graph.Features features;
 
     @Test
-    public void givenExistingLabelShouldRemoveItFromVertex() {
+    public void givenPropertyWithSingleCardinalityShouldAddItToVertex() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -76,20 +75,20 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
         // act
-        boolean result = vertex.removeLabel("l1");
+        VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.single, "test", 1L);
         // assert
-        Assert.assertTrue("Failed to remove label from vertex", result);
-        Assert.assertArrayEquals("Invalid vertex labels", vertex.labels(), new String[]{});
-        Assert.assertTrue("Failed to mark vertex as dirty", vertex.isDirty());
+        Assert.assertNotNull("Failed to add property to vertex", result);
+        Assert.assertTrue("Property value is not present", result.isPresent());
+        Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property value", result.value(), 1L);
     }
 
     @Test
-    public void givenNotExistingLabelShouldNotModifyVertex() {
+    public void givenPropertyWithListCardinalityShouldAddItToVertex() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -99,63 +98,33 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
         // act
-        boolean result = vertex.removeLabel("l2");
+        VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
         // assert
-        Assert.assertFalse("Failed to detect label was not present in vertex", result);
-        Assert.assertArrayEquals("Invalid vertex labels", vertex.labels(), new String[]{"l1"});
-        Assert.assertFalse("Vertex is dirty", vertex.isDirty());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void givenLabelInReadPartitionShouldThrowException() {
-        // arrange
-        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
-        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
-        Mockito.when(partition.validateLabel(Mockito.eq("label"))).thenAnswer(invocation -> false);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
-        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(graph.features()).thenAnswer(invocation -> features);
-        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
-        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        Assert.assertNotNull("Failed to add property to vertex", result);
+        Assert.assertTrue("Property value is not present", result.isPresent());
+        Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property value", result.value(), 1L);
         // act
-        vertex.removeLabel("label");
+        result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
         // assert
-        Assert.fail("Failed to detect label in partition");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void givenLabelInWritePartitionShouldThrowException() {
-        // arrange
-        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
-        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
-        Mockito.when(partition.validateLabel(Mockito.eq("label1"))).thenAnswer(invocation -> true);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
-        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(graph.features()).thenAnswer(invocation -> features);
-        Mockito.when(graph.vertexLabels()).thenAnswer(invocation -> new HashSet<>(Arrays.asList("label1", "label2")));
-        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
-        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("label1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        // act
-        vertex.removeLabel("label1");
-        // assert
-        Assert.fail("Failed to detect label in partition");
+        Assert.assertNotNull("Failed to add property to vertex", result);
+        Assert.assertTrue("Property value is not present", result.isPresent());
+        Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property value", result.value(), 1L);
+        Iterator<Long> values = vertex.values("test");
+        Assert.assertTrue("Invalid number of property values", values.hasNext());
+        Assert.assertEquals("Invalid property value", values.next(), (Long)1L);
+        Assert.assertTrue("Invalid number of property values", values.hasNext());
+        Assert.assertEquals("Invalid property value", values.next(), (Long)1L);
+        Assert.assertFalse("Invalid number of property values", values.hasNext());
     }
 
     @Test
-    public void givenLabelThatWasPreviouslyAddedShouldRemoveItFromVertex() {
+    public void givenPropertyWithSetCardinalityShouldAddItToVertex() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -165,17 +134,67 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
         Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
-        vertex.addLabel("l3");
-        Assert.assertTrue(vertex.isDirty());
         // act
-        boolean result = vertex.removeLabel("l3");
+        VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.set, "test", 1L);
         // assert
-        Assert.assertTrue("Failed to remove label from vertex", result);
-        Assert.assertArrayEquals("Invalid vertex labels", vertex.labels(), new String[]{"l1"});
-        Assert.assertFalse("Failed to reset vertex dirty property", vertex.isDirty());
+        Assert.assertNotNull("Failed to add property to vertex", result);
+        Assert.assertTrue("Property value is not present", result.isPresent());
+        Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property value", result.value(), 1L);
+        // act
+        result = vertex.property(VertexProperty.Cardinality.set, "test", 1L);
+        // assert
+        Assert.assertNotNull("Failed to add property to vertex", result);
+        Assert.assertTrue("Property value is not present", result.isPresent());
+        Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property value", result.value(), 1L);
+        Iterator<Long> values = vertex.values("test");
+        Assert.assertTrue("Invalid number of property values", values.hasNext());
+        Assert.assertEquals("Invalid property value", values.next(), (Long)1L);
+        Assert.assertFalse("Invalid number of property values", values.hasNext());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void givenPropertyWithCardinalityShouldKeepTheSameCardinality() {
+        // arrange
+        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
+        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(graph.features()).thenAnswer(invocation -> features);
+        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
+        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        vertex.property(VertexProperty.Cardinality.single, "test", 1L);
+        // act
+        VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
+        // assert
+        Assert.fail("Failed to detect property with different cardinality");
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void givenPropertyWithMetaPropertyShouldThrowException() {
+        // arrange
+        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
+        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(graph.features()).thenAnswer(invocation -> features);
+        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
+        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        // act
+        vertex.property(VertexProperty.Cardinality.single, "test", 1L, "a", 2L);
+        // assert
+        Assert.fail("Failed to prevent property with meta properties");
     }
 }

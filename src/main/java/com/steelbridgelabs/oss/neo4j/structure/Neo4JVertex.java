@@ -671,7 +671,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // use set
                     properties.put(name, set);
                     // cardinality
-                    cardinalities.put(name, VertexProperty.Cardinality.list);
+                    cardinalities.put(name, VertexProperty.Cardinality.set);
                 }
                 // add value to set, this will call dirty method in session only if element did not exist
                 if (set.add(property)) {
