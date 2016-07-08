@@ -119,10 +119,10 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private boolean newEdge;
     private Map<String, Neo4JEdgeProperty> originalProperties;
 
-    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
+    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider provider, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(idFieldName, "idFieldName cannot be null");
+        Objects.requireNonNull(provider, "provider cannot be null");
         Objects.requireNonNull(id, "id cannot be null");
         Objects.requireNonNull(label, "label cannot be null");
         Objects.requireNonNull(properties, "properties cannot be null");
@@ -131,8 +131,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // store fields
         this.graph = graph;
         this.session = session;
-        this.idFieldName = idFieldName;
-        this.id = id;
+        this.idFieldName = provider.idFieldName();
+        this.id = provider.processIdentifier(id);
         this.label = label;
         this.out = out;
         this.in = in;
@@ -142,19 +142,19 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         newEdge = true;
     }
 
-    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String idFieldName, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
+    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider provider, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(idFieldName, "idFieldName cannot be null");
+        Objects.requireNonNull(provider, "provider cannot be null");
         Objects.requireNonNull(out, "out cannot be null");
         Objects.requireNonNull(relationship, "relationship cannot be null");
         Objects.requireNonNull(in, "in cannot be null");
         // store fields
         this.graph = graph;
         this.session = session;
-        this.idFieldName = idFieldName;
+        this.idFieldName = provider.idFieldName();
         // from relationship
-        this.id = relationship.get(idFieldName).asObject();
+        this.id = provider.processIdentifier(relationship.get(idFieldName).asObject());
         this.label = relationship.type();
         // copy properties from relationship, remove idFieldName from map
         StreamSupport.stream(relationship.keys().spliterator(), false).filter(key -> idFieldName.compareTo(key) != 0).forEach(key -> {

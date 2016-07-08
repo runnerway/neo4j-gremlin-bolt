@@ -21,6 +21,7 @@ package com.steelbridgelabs.oss.neo4j;
 
 import com.steelbridgelabs.oss.neo4j.structure.Neo4JElementIdProvider;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -40,5 +41,21 @@ public class ElementIdProvider implements Neo4JElementIdProvider<Long> {
     @Override
     public Long generateId() {
         return atomicLong.incrementAndGet();
+    }
+
+    @Override
+    public Long processIdentifier(Object id) {
+        Objects.requireNonNull(id, "Element identifier cannot be null");
+        // check for Long
+        if (id instanceof Long)
+            return (Long)id;
+        // check for numeric types
+        if (id instanceof Number)
+            return ((Number)id).longValue();
+        // check for string
+        if (id instanceof String)
+            return Long.valueOf((String)id);
+        // error, TODO get message from resource file
+        throw new IllegalArgumentException(String.format("Expected an id that is convertible to Long but received %s", id.getClass()));
     }
 }
