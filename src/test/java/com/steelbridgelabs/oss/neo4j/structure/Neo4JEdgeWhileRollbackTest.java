@@ -57,10 +57,13 @@ public class Neo4JEdgeWhileRollbackTest {
     @Mock
     private Neo4JElementIdProvider provider;
 
+    @Mock
+    private Transaction transaction;
+
     @Test
     public void givenStringPropertyShouldRollbackToOriginalValue() {
         // arrange
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
@@ -81,7 +84,7 @@ public class Neo4JEdgeWhileRollbackTest {
     @Test
     public void givenDirtyEdgeShouldRollbackToOriginalState() {
         // arrange
-        Mockito.when(graph.tx()).thenAnswer(invocation -> Mockito.mock(Transaction.class));
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));

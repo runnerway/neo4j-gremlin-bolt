@@ -22,7 +22,7 @@ package com.steelbridgelabs.oss.neo4j.structure.providers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
+import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Driver;
 
@@ -32,10 +32,12 @@ import org.neo4j.driver.v1.Driver;
 @RunWith(MockitoJUnitRunner.class)
 public class DatabaseSequenceElementIdProviderWhileGettingIdFieldNameTest {
 
+    @Mock
+    private Driver driver;
+
     @Test
     public void givenNoIdFieldNameShouldUseDefaultValue() {
         // arrange
-        Driver driver = Mockito.mock(Driver.class);
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver);
         // act
         String fieldName = provider.idFieldName();
@@ -47,7 +49,6 @@ public class DatabaseSequenceElementIdProviderWhileGettingIdFieldNameTest {
     @Test
     public void givenIdFieldNameShouldUseUseIt() {
         // arrange
-        Driver driver = Mockito.mock(Driver.class);
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 1000, "field1", "label");
         // act
         String fieldName = provider.idFieldName();

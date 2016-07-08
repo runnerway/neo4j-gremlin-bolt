@@ -22,6 +22,7 @@ package com.steelbridgelabs.oss.neo4j.structure.providers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Driver;
@@ -38,19 +39,29 @@ import org.neo4j.driver.v1.Values;
 @RunWith(MockitoJUnitRunner.class)
 public class DatabaseSequenceElementIdProviderWhileGeneratingIdTest {
 
+    @Mock
+    private Record record;
+
+    @Mock
+    private StatementResult result;
+
+    @Mock
+    private Transaction transaction;
+
+    @Mock
+    private Session session;
+
+    @Mock
+    private Driver driver;
+
     @Test
     public void givenANewProviderShouldRequestPoolOfIdentifiers() {
         // arrange
-        Record record = Mockito.mock(Record.class);
         Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> Values.value(2));
-        StatementResult result = Mockito.mock(StatementResult.class);
         Mockito.when(result.hasNext()).thenAnswer(invocation -> true);
         Mockito.when(result.next()).thenAnswer(invocation -> record);
-        Transaction transaction = Mockito.mock(Transaction.class);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> result);
-        Session session = Mockito.mock(Session.class);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
-        Driver driver = Mockito.mock(Driver.class);
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 2, "field1", "label");
         // act
@@ -68,16 +79,11 @@ public class DatabaseSequenceElementIdProviderWhileGeneratingIdTest {
     @Test
     public void givenTwoIdentifierRequestsShouldRequestPoolOfIdentifiers() {
         // arrange
-        Record record = Mockito.mock(Record.class);
         Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> Values.value(1));
-        StatementResult result = Mockito.mock(StatementResult.class);
         Mockito.when(result.hasNext()).thenAnswer(invocation -> true);
         Mockito.when(result.next()).thenAnswer(invocation -> record);
-        Transaction transaction = Mockito.mock(Transaction.class);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> result);
-        Session session = Mockito.mock(Session.class);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
-        Driver driver = Mockito.mock(Driver.class);
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 1, "field1", "label");
         // act
