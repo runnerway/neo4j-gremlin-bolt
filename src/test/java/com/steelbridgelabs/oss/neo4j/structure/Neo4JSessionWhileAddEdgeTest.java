@@ -23,6 +23,7 @@ import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -56,6 +57,8 @@ public class Neo4JSessionWhileAddEdgeTest {
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
         try (Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider)) {
             // act
             Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex);
@@ -72,6 +75,8 @@ public class Neo4JSessionWhileAddEdgeTest {
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
         try (Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider)) {
             // act
             Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex);
@@ -88,6 +93,8 @@ public class Neo4JSessionWhileAddEdgeTest {
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
         try (Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider, provider)) {
             // act
             Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex, "k1", "v1", "k2", 2L, "k3", true);

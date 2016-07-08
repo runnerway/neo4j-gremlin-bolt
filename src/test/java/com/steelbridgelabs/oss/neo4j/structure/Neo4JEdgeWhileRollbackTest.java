@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -53,6 +54,9 @@ public class Neo4JEdgeWhileRollbackTest {
     @Mock
     private Relationship relationship;
 
+    @Mock
+    private Neo4JElementIdProvider provider;
+
     @Test
     public void givenStringPropertyShouldRollbackToOriginalValue() {
         // arrange
@@ -61,7 +65,10 @@ public class Neo4JEdgeWhileRollbackTest {
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(relationship.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Neo4JEdge edge = new Neo4JEdge(graph, session, "id", outVertex, relationship, inVertex);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("key1", "value2");
         // act
         edge.rollback();
@@ -79,7 +86,10 @@ public class Neo4JEdgeWhileRollbackTest {
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(relationship.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Neo4JEdge edge = new Neo4JEdge(graph, session, "id", outVertex, relationship, inVertex);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("key1", "value2");
         // act
         edge.rollback();

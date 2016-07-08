@@ -77,7 +77,8 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.single, "test", 1L);
         // assert
@@ -100,7 +101,8 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
         // assert
@@ -136,7 +138,8 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.set, "test", 1L);
         // assert
@@ -170,7 +173,8 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         vertex.property(VertexProperty.Cardinality.single, "test", 1L);
         // act
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
@@ -191,7 +195,8 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, "id", node);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         vertex.property(VertexProperty.Cardinality.single, "test", 1L, "a", 2L);
         // assert

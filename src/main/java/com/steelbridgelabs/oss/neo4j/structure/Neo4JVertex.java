@@ -182,11 +182,11 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private Map<String, Collection<VertexProperty>> originalProperties;
     private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
-    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Object id, Collection<String> labels) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Neo4JElementIdProvider propertyIdProvider, Object id, Collection<String> labels) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
+        Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
-        Objects.requireNonNull(idFieldName, "idFieldName cannot be null");
         Objects.requireNonNull(id, "id cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
         // store fields
@@ -195,8 +195,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.additionalLabels = graph.vertexLabels();
         this.session = session;
         this.propertyIdProvider = propertyIdProvider;
-        this.idFieldName = idFieldName;
-        this.id = id;
+        this.idFieldName = vertexIdProvider.idFieldName();
+        this.id = vertexIdProvider.processIdentifier(id);
         this.labels = new TreeSet<>(labels);
         // this is the original set of labels
         this.originalLabels = Collections.emptySortedSet();
@@ -212,11 +212,11 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         inEdgesLoaded = true;
     }
 
-    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider propertyIdProvider, String idFieldName, Node node) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Neo4JElementIdProvider propertyIdProvider, Node node) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
+        Objects.requireNonNull(vertexIdProvider, "idFieldName cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
-        Objects.requireNonNull(idFieldName, "idFieldName cannot be null");
         Objects.requireNonNull(node, "node cannot be null");
         // store fields
         this.graph = graph;
@@ -224,9 +224,9 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.additionalLabels = graph.vertexLabels();
         this.session = session;
         this.propertyIdProvider = propertyIdProvider;
-        this.idFieldName = idFieldName;
+        this.idFieldName = vertexIdProvider.idFieldName();
         // from node
-        this.id = node.get(idFieldName).asObject();
+        this.id = vertexIdProvider.processIdentifier(node.get(idFieldName).asObject());
         // graph labels (additional & partition labels in original node)
         this.graphLabels = StreamSupport.stream(node.labels().spliterator(), false).filter(label -> additionalLabels.contains(label) && !partition.validateLabel(label)).collect(Collectors.toSet());
         // labels, do not store additional && partition labels

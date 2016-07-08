@@ -37,4 +37,12 @@ public interface Neo4JElementIdProvider<T> {
      * @return the new identifier value.
      */
     T generateId();
+
+    /**
+     * Process the given identifier converting it to the correct type if necessary.
+     *
+     * @param id The {@link Neo4JElement} identifier.
+     * @return The {@link Neo4JElement} identifier converted to the correct type if necessary.
+     */
+    T processIdentifier(Object id);
 }

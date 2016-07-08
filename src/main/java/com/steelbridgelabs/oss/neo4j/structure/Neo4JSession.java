@@ -235,7 +235,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create vertex
-        Neo4JVertex vertex = new Neo4JVertex(graph, this, propertyIdProvider, vertexIdFieldName, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(VertexLabelDelimiter)));
+        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(VertexLabelDelimiter)));
         // add vertex to transient set (before processing properties to avoid having a transient vertex in update queue)
         transientVertices.add(vertex);
         // attach properties
@@ -259,7 +259,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create edge
-        Neo4JEdge edge = new Neo4JEdge(graph, this, edgeIdFieldName, edgeIdProvider.generateId(), label, out, in);
+        Neo4JEdge edge = new Neo4JEdge(graph, this, edgeIdProvider, edgeIdProvider.generateId(), label, out, in);
         // register transient edge (before processing properties to avoid having a transient edge in update queue)
         transientEdges.add(edge);
         // attach properties
@@ -293,7 +293,7 @@ class Neo4JSession implements AutoCloseable {
             // check ids
             if (ids.length > 0) {
                 // parameters as a stream
-                Set<Object> identifiers = Arrays.stream(ids).map(Neo4JSession::processIdentifier).collect(Collectors.toSet());
+                Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(vertexIdProvider, id)).collect(Collectors.toSet());
                 // filter ids, remove ids already in memory (only ids that might exist on server)
                 List<Object> filter = identifiers.stream().filter(id -> !vertices.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
@@ -326,7 +326,7 @@ class Neo4JSession implements AutoCloseable {
         // check ids
         if (ids.length > 0) {
             // parameters as a stream (set to remove duplicated ids)
-            Set<Object> identifiers = Arrays.stream(ids).map(Neo4JSession::processIdentifier).collect(Collectors.toSet());
+            Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(vertexIdProvider, id)).collect(Collectors.toSet());
             // no need to execute query, only items in memory
             return identifiers.stream()
                 .filter(vertices::containsKey)
@@ -360,7 +360,7 @@ class Neo4JSession implements AutoCloseable {
             // check ids
             if (ids.length > 0) {
                 // parameters as a stream
-                Set<Object> identifiers = Arrays.stream(ids).map(Neo4JSession::processIdentifier).collect(Collectors.toSet());
+                Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(edgeIdProvider, id)).collect(Collectors.toSet());
                 // filter ids, remove ids already in memory (only ids that might exist on server)
                 List<Object> filter = identifiers.stream().filter(id -> !edges.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
@@ -395,7 +395,7 @@ class Neo4JSession implements AutoCloseable {
         // check ids
         if (ids.length > 0) {
             // parameters as a stream (set to remove duplicated ids)
-            Set<Object> identifiers = Arrays.stream(ids).map(Neo4JSession::processIdentifier).collect(Collectors.toSet());
+            Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(edgeIdProvider, id)).collect(Collectors.toSet());
             // no need to execute query, only items in memory
             return identifiers.stream()
                 .filter(edges::containsKey)
@@ -489,24 +489,15 @@ class Neo4JSession implements AutoCloseable {
         }
     }
 
-    private static Object processIdentifier(Object id) {
-        // check for Long
-        if (id instanceof Long)
-            return id;
-        // check for numeric types
-        if (id instanceof Number)
-            return ((Number)id).longValue();
-        // check for string
-        if (id instanceof String)
-            return Long.valueOf((String)id);
+    private static Object processIdentifier(Neo4JElementIdProvider provider, Object id) {
         // vertex
         if (id instanceof Vertex)
             return ((Vertex)id).id();
         // edge
         if (id instanceof Edge)
             return ((Edge)id).id();
-        // error, TODO get message from resource file
-        throw new IllegalArgumentException(String.format("Expected an id that is convertible to Long but received %s", id.getClass()));
+        // delegate processing to provider
+        return provider.processIdentifier(id);
     }
 
     private Vertex loadVertex(Record record) {
@@ -519,7 +510,7 @@ class Neo4JSession implements AutoCloseable {
             // check node belongs to partition
             if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
                 // create and register vertex
-                return registerVertex(new Neo4JVertex(graph, this, propertyIdProvider, vertexIdFieldName, node));
+                return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, node));
             }
         }
         // skip vertex
@@ -549,7 +540,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex firstVertex = vertices.get(firstNodeId);
                 if (firstVertex == null) {
                     // create vertex
-                    firstVertex = new Neo4JVertex(graph, this, propertyIdProvider, vertexIdFieldName, firstNode);
+                    firstVertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, firstNode);
                     // register it
                     registerVertex(firstVertex);
                 }
@@ -557,7 +548,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex secondVertex = vertices.get(secondNodeId);
                 if (secondVertex == null) {
                     // create vertex
-                    secondVertex = new Neo4JVertex(graph, this, propertyIdProvider, vertexIdFieldName, secondNode);
+                    secondVertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, secondNode);
                     // register it
                     registerVertex(secondVertex);
                 }
@@ -565,7 +556,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex out = relationship.startNodeId() == firstNode.id() ? firstVertex : secondVertex;
                 Neo4JVertex in = relationship.endNodeId() == firstNode.id() ? firstVertex : secondVertex;
                 // create edge
-                edge = new Neo4JEdge(graph, this, edgeIdFieldName, out, relationship, in);
+                edge = new Neo4JEdge(graph, this, edgeIdProvider, out, relationship, in);
                 // register with adjacent vertices
                 out.addOutEdge(edge);
                 in.addInEdge(edge);

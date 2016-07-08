@@ -150,4 +150,26 @@ public class DatabaseSequenceElementIdProvider implements Neo4JElementIdProvider
         // return identifier
         return identifier;
     }
+
+    /**
+     * Process the given identifier converting it to the correct type if necessary.
+     *
+     * @param id The {@link org.apache.tinkerpop.gremlin.structure.Element} identifier.
+     * @return The {@link org.apache.tinkerpop.gremlin.structure.Element} identifier converted to the correct type if necessary.
+     */
+    @Override
+    public Long processIdentifier(Object id) {
+        Objects.requireNonNull(id, "Element identifier cannot be null");
+        // check for Long
+        if (id instanceof Long)
+            return (Long)id;
+        // check for numeric types
+        if (id instanceof Number)
+            return ((Number)id).longValue();
+        // check for string
+        if (id instanceof String)
+            return Long.valueOf((String)id);
+        // error
+        throw new IllegalArgumentException(String.format("Expected an id that is convertible to Long but received %s", id.getClass()));
+    }
 }
