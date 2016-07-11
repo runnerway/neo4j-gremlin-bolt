@@ -57,8 +57,6 @@ class Neo4JSession implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(Neo4JSession.class);
 
-    public static final String VertexLabelDelimiter = "::";
-
     private final Neo4JGraph graph;
     private final Neo4JReadPartition partition;
     private final Session session;
@@ -234,7 +232,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create vertex
-        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(VertexLabelDelimiter)));
+        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
         // add vertex to transient set (before processing properties to avoid having a transient vertex in update queue)
         transientVertices.add(vertex);
         // attach properties
