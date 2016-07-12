@@ -22,11 +22,11 @@
     <parent>
         <artifactId>parent-oss</artifactId>
         <groupId>com.steelbridgelabs.oss</groupId>
-        <version>0.0.9</version>
+        <version>0.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-gremlin-bolt</artifactId>
-    <version>0.1.8</version>
+    <version>0.1.9</version>
     <packaging>jar</packaging>
     <name>SteelBridge Labs Neo4J Gremlin (Bolt) integration</name>
     <description>SteelBridge Labs Neo4J Gremlin (Bolt) integration</description>

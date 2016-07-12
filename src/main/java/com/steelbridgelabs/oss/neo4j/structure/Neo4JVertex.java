@@ -157,6 +157,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         }
     }
 
+    public static final String LabelDelimiter = "::";
+
     private final Neo4JGraph graph;
     private final Neo4JReadPartition partition;
     private final Neo4JSession session;
@@ -275,7 +277,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     @Override
     public String label() {
         // labels separated by "::"
-        return labels.stream().collect(Collectors.joining(Neo4JSession.VertexLabelDelimiter));
+        return labels.stream().collect(Collectors.joining(LabelDelimiter));
     }
 
     public String[] labels() {
