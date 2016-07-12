@@ -18,6 +18,7 @@
 
 package com.steelbridgelabs.oss.neo4j.structure;
 
+import com.steelbridgelabs.oss.neo4j.structure.partitions.NoReadPartition;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -47,39 +48,6 @@ import java.util.stream.Collectors;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @GraphFactoryClass(Neo4JGraphFactory.class)
 public class Neo4JGraph implements Graph {
-
-    private static class NoLabelReadPartition implements Neo4JReadPartition {
-
-        @Override
-        public boolean validateLabel(String label) {
-            return true;
-        }
-
-        @Override
-        public boolean containsVertex(Set<String> labels) {
-            return true;
-        }
-
-        @Override
-        public boolean usesMatchPattern() {
-            return false;
-        }
-
-        @Override
-        public boolean usesMatchPredicate() {
-            return false;
-        }
-
-        @Override
-        public Set<String> vertexMatchPatternLabels() {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public String vertexMatchPredicate(String alias) {
-            return null;
-        }
-    }
 
     private class Neo4JTransaction extends AbstractThreadLocalTransaction {
 
@@ -153,7 +121,7 @@ public class Neo4JGraph implements Graph {
         Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
         // no label partition
-        this.partition = new NoLabelReadPartition();
+        this.partition = new NoReadPartition();
         this.vertexLabels = Collections.emptySet();
         // store driver instance
         this.driver = driver;
