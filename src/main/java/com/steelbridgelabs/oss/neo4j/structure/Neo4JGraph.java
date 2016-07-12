@@ -182,7 +182,12 @@ public class Neo4JGraph implements Graph {
         return partition;
     }
 
-    Set<String> vertexLabels() {
+    /**
+     * Gets the labels that will be applied to vertices created by the current {@link Neo4JGraph}.
+     *
+     * @return The additional labels for new vertices.
+     */
+    public Set<String> vertexLabels() {
         return vertexLabels;
     }
 
