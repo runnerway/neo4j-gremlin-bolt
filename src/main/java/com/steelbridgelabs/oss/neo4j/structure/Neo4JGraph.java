@@ -166,7 +166,7 @@ public class Neo4JGraph implements Graph {
         Neo4JSession session = this.session.get();
         if (session == null) {
             // create new session
-            session = new Neo4JSession(this, driver.session(), vertexIdProvider, edgeIdProvider, propertyIdProvider);
+            session = new Neo4JSession(this, driver.session(), vertexIdProvider, edgeIdProvider);
             // attach it to current thread
             this.session.set(session);
         }

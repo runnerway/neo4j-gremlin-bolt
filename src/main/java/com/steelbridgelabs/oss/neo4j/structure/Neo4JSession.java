@@ -62,7 +62,6 @@ class Neo4JSession implements AutoCloseable {
     private final Session session;
     private final Neo4JElementIdProvider<?> vertexIdProvider;
     private final Neo4JElementIdProvider<?> edgeIdProvider;
-    private final Neo4JElementIdProvider<?> propertyIdProvider;
 
     private final Map<Object, Neo4JVertex> vertices = new HashMap<>();
     private final Map<Object, Neo4JEdge> edges = new HashMap<>();
@@ -81,12 +80,11 @@ class Neo4JSession implements AutoCloseable {
     private boolean verticesLoaded = false;
     private boolean edgesLoaded = false;
 
-    public Neo4JSession(Neo4JGraph graph, Session session, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JElementIdProvider<?> propertyIdProvider) {
+    public Neo4JSession(Neo4JGraph graph, Session session, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
         Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
         Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
-        Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
         // log information
         if (logger.isDebugEnabled())
             logger.debug("Creating session [{}]", session.hashCode());
@@ -96,7 +94,6 @@ class Neo4JSession implements AutoCloseable {
         this.session = session;
         this.vertexIdProvider = vertexIdProvider;
         this.edgeIdProvider = edgeIdProvider;
-        this.propertyIdProvider = propertyIdProvider;
         // initialize field ids names
         vertexIdFieldName = vertexIdProvider.idFieldName();
         edgeIdFieldName = edgeIdProvider.idFieldName();
@@ -232,7 +229,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create vertex
-        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
+        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
         // add vertex to transient set (before processing properties to avoid having a transient vertex in update queue)
         transientVertices.add(vertex);
         // attach properties
@@ -507,7 +504,7 @@ class Neo4JSession implements AutoCloseable {
             // check node belongs to partition
             if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
                 // create and register vertex
-                return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, node));
+                return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, node));
             }
         }
         // skip vertex
@@ -537,7 +534,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex firstVertex = vertices.get(firstNodeId);
                 if (firstVertex == null) {
                     // create vertex
-                    firstVertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, firstNode);
+                    firstVertex = new Neo4JVertex(graph, this, vertexIdProvider, firstNode);
                     // register it
                     registerVertex(firstVertex);
                 }
@@ -545,7 +542,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex secondVertex = vertices.get(secondNodeId);
                 if (secondVertex == null) {
                     // create vertex
-                    secondVertex = new Neo4JVertex(graph, this, vertexIdProvider, propertyIdProvider, secondNode);
+                    secondVertex = new Neo4JVertex(graph, this, vertexIdProvider, secondNode);
                     // register it
                     registerVertex(secondVertex);
                 }
