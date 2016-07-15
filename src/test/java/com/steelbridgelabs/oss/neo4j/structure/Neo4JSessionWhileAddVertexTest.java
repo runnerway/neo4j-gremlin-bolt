@@ -66,7 +66,7 @@ public class Neo4JSessionWhileAddVertexTest {
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
-        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider, provider)) {
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
             Vertex vertex = session.addVertex();
             // assert
@@ -83,7 +83,7 @@ public class Neo4JSessionWhileAddVertexTest {
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.anyInt())).thenAnswer(invocation -> 1L);
-        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider, provider)) {
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
             Vertex vertex = session.addVertex();
             // assert
@@ -100,7 +100,7 @@ public class Neo4JSessionWhileAddVertexTest {
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
-        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider, provider)) {
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
             Vertex vertex = session.addVertex(T.label, "label1");
             // assert
@@ -117,7 +117,7 @@ public class Neo4JSessionWhileAddVertexTest {
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
-        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider, provider)) {
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
             Neo4JVertex vertex = session.addVertex(T.label, "label1::label2::label3");
             // assert
@@ -138,7 +138,7 @@ public class Neo4JSessionWhileAddVertexTest {
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
-        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider, provider)) {
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
             Neo4JVertex vertex = session.addVertex("k1", "v1", "k2", 2L, "k3", true);
             // assert

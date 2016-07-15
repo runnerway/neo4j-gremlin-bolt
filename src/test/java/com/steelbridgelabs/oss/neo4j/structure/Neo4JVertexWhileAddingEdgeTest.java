@@ -83,7 +83,7 @@ public class Neo4JVertexWhileAddingEdgeTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
         Mockito.when(session.addEdge(Mockito.eq("A"), Mockito.eq(vertex), Mockito.eq(otherVertex))).thenAnswer(invocation -> edge);
         // act
         Edge edge = vertex.addEdge("A", otherVertex);
@@ -105,7 +105,7 @@ public class Neo4JVertexWhileAddingEdgeTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
         Mockito.when(session.addEdge(Mockito.eq("A"), Mockito.eq(vertex), Mockito.eq(otherVertex), Mockito.eq("k1"), Mockito.eq(10L))).thenAnswer(invocation -> edge);
         // act
         Edge edge = vertex.addEdge("A", otherVertex, "k1", 10L);

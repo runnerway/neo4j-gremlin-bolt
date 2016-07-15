@@ -78,7 +78,7 @@ public class Neo4JVertexWhileCreatingMatchPredicateTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
         // act
         String result = vertex.matchPredicate("a");
         // assert

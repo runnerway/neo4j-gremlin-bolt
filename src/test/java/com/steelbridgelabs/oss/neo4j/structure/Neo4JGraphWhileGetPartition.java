@@ -47,7 +47,7 @@ public class Neo4JGraphWhileGetPartition {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider, provider)) {
+        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
             Neo4JReadPartition partition = graph.getPartition();
             // assert

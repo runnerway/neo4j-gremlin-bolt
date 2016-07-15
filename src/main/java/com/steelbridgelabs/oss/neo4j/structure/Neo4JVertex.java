@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -159,10 +160,11 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     public static final String LabelDelimiter = "::";
 
+    private static final AtomicLong propertyIdProvider = new AtomicLong(0L);
+
     private final Neo4JGraph graph;
     private final Neo4JReadPartition partition;
     private final Neo4JSession session;
-    private final Neo4JElementIdProvider propertyIdProvider;
     private final Map<String, Collection<VertexProperty>> properties = new HashMap<>();
     private final Map<String, VertexProperty.Cardinality> cardinalities = new HashMap<>();
     private final Set<Neo4JEdge> outEdges = new HashSet<>();
@@ -183,11 +185,10 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private Map<String, Collection<VertexProperty>> originalProperties;
     private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
-    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Neo4JElementIdProvider propertyIdProvider, Object id, Collection<String> labels) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Object id, Collection<String> labels) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
         Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
-        Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
         Objects.requireNonNull(id, "id cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
         // store fields
@@ -195,7 +196,6 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.partition = graph.getPartition();
         this.additionalLabels = graph.vertexLabels();
         this.session = session;
-        this.propertyIdProvider = propertyIdProvider;
         this.idFieldName = vertexIdProvider.idFieldName();
         this.id = vertexIdProvider.processIdentifier(id);
         this.labels = new TreeSet<>(labels);
@@ -213,18 +213,16 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         inEdgesLoaded = true;
     }
 
-    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Neo4JElementIdProvider propertyIdProvider, Node node) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Node node) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
         Objects.requireNonNull(vertexIdProvider, "idFieldName cannot be null");
-        Objects.requireNonNull(propertyIdProvider, "propertyIdProvider cannot be null");
         Objects.requireNonNull(node, "node cannot be null");
         // store fields
         this.graph = graph;
         this.partition = graph.getPartition();
         this.additionalLabels = graph.vertexLabels();
         this.session = session;
-        this.propertyIdProvider = propertyIdProvider;
         this.idFieldName = vertexIdProvider.idFieldName();
         // from node
         this.id = vertexIdProvider.processIdentifier(node.get(idFieldName).asObject());
@@ -244,7 +242,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             switch (value.type().name()) {
                 case "LIST":
                     // process values
-                    properties.put(key, value.asList().stream().map(item -> new Neo4JVertexProperty<>(this, propertyIdProvider.generateId(), key, item)).collect(Collectors.toList()));
+                    properties.put(key, value.asList().stream().map(item -> new Neo4JVertexProperty<>(this, propertyIdProvider.incrementAndGet(), key, item)).collect(Collectors.toList()));
                     // cardinality
                     cardinalities.put(key, VertexProperty.Cardinality.list);
                     break;
@@ -252,7 +250,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     throw new RuntimeException("TODO: implement maps");
                 default:
                     // add property
-                    properties.put(key, Collections.singletonList(new Neo4JVertexProperty<>(this, propertyIdProvider.generateId(), key, value.asObject())));
+                    properties.put(key, Collections.singletonList(new Neo4JVertexProperty<>(this, propertyIdProvider.incrementAndGet(), key, value.asObject())));
                     // cardinality
                     cardinalities.put(key, VertexProperty.Cardinality.single);
                     break;
@@ -641,7 +639,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // transaction should be ready for io operations
         graph.tx().readWrite();
         // vertex property
-        Neo4JVertexProperty<V> property = new Neo4JVertexProperty<>(this, propertyIdProvider.generateId(), name, value);
+        Neo4JVertexProperty<V> property = new Neo4JVertexProperty<>(this, propertyIdProvider.incrementAndGet(), name, value);
         // check cardinality
         switch (cardinality) {
             case list:
@@ -674,8 +672,10 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // cardinality
                     cardinalities.put(name, VertexProperty.Cardinality.set);
                 }
-                // add value to set, this will call dirty method in session only if element did not exist
-                if (set.add(property)) {
+                // check value does not exist in collection, TODO: optimize this search
+                if (!set.stream().filter(item -> item.value().equals(value)).findAny().isPresent()) {
+                    // add property to set
+                    set.add(property);
                     // notify session
                     session.dirtyVertex(this);
                     // update flag
