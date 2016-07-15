@@ -45,12 +45,11 @@ public class Neo4JGraphFactory {
             // create providers
             Neo4JElementIdProvider<?> vertexIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JVertexIdProviderClassNameConfigurationKey));
             Neo4JElementIdProvider<?> edgeIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JEdgeIdProviderClassNameConfigurationKey));
-            Neo4JElementIdProvider<?> propertyIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JPropertyIdProviderClassNameConfigurationKey));
             // check a read partition is required
             if (graphName != null)
-                return new Neo4JGraph(new AnyLabelReadPartition(graphName), new String[]{graphName}, driver, vertexIdProvider, edgeIdProvider, propertyIdProvider);
+                return new Neo4JGraph(new AnyLabelReadPartition(graphName), new String[]{graphName}, driver, vertexIdProvider, edgeIdProvider);
             // no partition
-            return new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider);
+            return new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider);
         }
         catch (Throwable ex) {
             // throw runtime exception

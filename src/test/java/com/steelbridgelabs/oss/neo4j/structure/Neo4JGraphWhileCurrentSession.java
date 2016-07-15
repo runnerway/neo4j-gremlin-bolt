@@ -47,7 +47,7 @@ public class Neo4JGraphWhileCurrentSession {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider, provider)) {
+        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
             try (Neo4JSession neo4JSession = graph.currentSession()) {
                 // assert
@@ -61,7 +61,7 @@ public class Neo4JGraphWhileCurrentSession {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider, provider)) {
+        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             try (Neo4JSession neo4JSession1 = graph.currentSession()) {
                 Assert.assertNotNull("Failed to create Neo4JSession instance", neo4JSession1);
                 // act
@@ -78,7 +78,7 @@ public class Neo4JGraphWhileCurrentSession {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider, provider)) {
+        try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             try (final Neo4JSession neo4JSession1 = graph.currentSession()) {
                 Assert.assertNotNull("Failed to create Neo4JSession instance", neo4JSession1);
                 // act
