@@ -246,6 +246,21 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("unchecked")
+    public <V> Property<V> property(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
+        // property value
+        Neo4JEdgeProperty propertyValue = properties.get(key);
+        if (propertyValue != null)
+            return (Property<V>)propertyValue;
+        // empty property
+        return Property.<V>empty();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void remove() {
         // transaction should be ready for io operations
         graph.tx().readWrite();

@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-gremlin-bolt</artifactId>
-    <version>0.2.2</version>
+    <version>0.2.3</version>
     <packaging>jar</packaging>
     <name>SteelBridge Labs Neo4J Gremlin (Bolt) integration</name>
     <description>SteelBridge Labs Neo4J Gremlin (Bolt) integration</description>
@@ -57,7 +57,7 @@
     </scm>
     <properties>
         <!-- neo4j -->
-        <neo4j.version>1.0.3</neo4j.version>
+        <neo4j.version>1.0.4</neo4j.version>
         <!-- gremlin -->
         <gremlin.version>3.2.0-incubating</gremlin.version>
         <!-- slf4j -->

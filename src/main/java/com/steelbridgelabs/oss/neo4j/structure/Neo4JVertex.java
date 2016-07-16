@@ -716,7 +716,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // first element
                     return (VertexProperty<V>)iterator.next();
                 }
-                return null;
+                return VertexProperty.<V>empty();
             }
             // exception
             throw Vertex.Exceptions.multiplePropertiesExistForProvidedKey(key);
