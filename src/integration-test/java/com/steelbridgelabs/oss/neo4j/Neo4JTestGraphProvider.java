@@ -60,7 +60,6 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
         Configuration configuration = Neo4JGraphConfigurationBuilder.connect("localhost", "neo4j", "123")
             .withName(graphName)
             .withElementIdProvider(ElementIdProvider.class)
-            .withConnectionPoolSize(300)
             .build();
         // create property map from configuration
         Map<String, Object> map = StreamSupport.stream(Spliterators.spliteratorUnknownSize(configuration.getKeys(), Spliterator.NONNULL | Spliterator.IMMUTABLE), false)

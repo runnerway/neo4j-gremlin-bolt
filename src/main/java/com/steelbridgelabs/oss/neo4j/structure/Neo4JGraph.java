@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.util.GraphFactoryClass;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -109,9 +110,9 @@ public class Neo4JGraph implements Graph {
     /**
      * Creates a {@link Neo4JGraph} instance.
      *
-     * @param driver             The {@link Driver} instance with the database connection information.
-     * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
-     * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param driver           The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider   The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
      */
     public Neo4JGraph(Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider) {
         Objects.requireNonNull(driver, "driver cannot be null");
@@ -130,11 +131,11 @@ public class Neo4JGraph implements Graph {
     /**
      * Creates a {@link Neo4JGraph} instance with the given partition within the neo4j database.
      *
-     * @param partition          The {@link Neo4JReadPartition} within the neo4j database.
-     * @param vertexLabels       The set of labels to append to vertices created by the {@link Neo4JGraph} session.
-     * @param driver             The {@link Driver} instance with the database connection information.
-     * @param vertexIdProvider   The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
-     * @param edgeIdProvider     The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param partition        The {@link Neo4JReadPartition} within the neo4j database.
+     * @param vertexLabels     The set of labels to append to vertices created by the {@link Neo4JGraph} session.
+     * @param driver           The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider   The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
      */
     public Neo4JGraph(Neo4JReadPartition partition, String[] vertexLabels, Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider) {
         Objects.requireNonNull(partition, "partition cannot be null");
@@ -299,7 +300,7 @@ public class Neo4JGraph implements Graph {
         Neo4JSession session = currentSession();
         // transaction should be ready for io operations
         transaction.readWrite();
-        // find vertices
+        // find edges
         return session.edges(statement)
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
@@ -311,7 +312,7 @@ public class Neo4JGraph implements Graph {
         Neo4JSession session = currentSession();
         // transaction should be ready for io operations
         transaction.readWrite();
-        // find vertices
+        // find edges
         return session.edges(new Statement(statement))
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
@@ -324,10 +325,63 @@ public class Neo4JGraph implements Graph {
         Neo4JSession session = currentSession();
         // transaction should be ready for io operations
         transaction.readWrite();
-        // find vertices
+        // find edges
         return session.edges(new Statement(statement, parameters))
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
+    }
+
+    /**
+     * Executes the given statement on the current {@link Graph} instance. WARNING: There is no
+     * guarantee that the results are confined within the current {@link Neo4JReadPartition}.
+     *
+     * @param statement The CYPHER statement.
+     * @return The {@link StatementResult} with the CYPHER statement execution results.
+     */
+    public StatementResult execute(Statement statement) {
+        Objects.requireNonNull(statement, "statement cannot be null");
+        // get current session
+        Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
+        // find execute statement
+        return session.execute(statement);
+    }
+
+    /**
+     * Executes the given statement on the current {@link Graph} instance. WARNING: There is no
+     * guarantee that the results are confined within the current {@link Neo4JReadPartition}.
+     *
+     * @param statement The CYPHER statement.
+     * @return The {@link StatementResult} with the CYPHER statement execution results.
+     */
+    public StatementResult execute(String statement) {
+        Objects.requireNonNull(statement, "statement cannot be null");
+        // get current session
+        Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
+        // find execute statement
+        return session.execute(new Statement(statement));
+    }
+
+    /**
+     * Executes the given statement on the current {@link Graph} instance. WARNING: There is no
+     * guarantee that the results are confined within the current {@link Neo4JReadPartition}.
+     *
+     * @param statement  The CYPHER statement.
+     * @param parameters The CYPHER statement parameters.
+     * @return The {@link StatementResult} with the CYPHER statement execution results.
+     */
+    public StatementResult execute(String statement, Map<String, Object> parameters) {
+        Objects.requireNonNull(statement, "statement cannot be null");
+        Objects.requireNonNull(parameters, "parameters cannot be null");
+        // get current session
+        Neo4JSession session = currentSession();
+        // transaction should be ready for io operations
+        transaction.readWrite();
+        // find execute statement
+        return session.execute(new Statement(statement, parameters));
     }
 
     /**
