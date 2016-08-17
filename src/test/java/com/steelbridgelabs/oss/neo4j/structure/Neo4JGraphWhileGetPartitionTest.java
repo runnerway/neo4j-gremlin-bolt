@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.Session;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JGraphWhileGetPartition {
+public class Neo4JGraphWhileGetPartitionTest {
 
     @Mock
     private Driver driver;

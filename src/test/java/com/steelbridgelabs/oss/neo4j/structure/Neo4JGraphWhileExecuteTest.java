@@ -26,12 +26,17 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
+
+import java.util.Collections;
 
 /**
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JGraphWhileCurrentSession {
+public class Neo4JGraphWhileExecuteTest {
 
     @Mock
     private Driver driver;
@@ -40,58 +45,59 @@ public class Neo4JGraphWhileCurrentSession {
     private Session session;
 
     @Mock
+    private Transaction transaction;
+
+    @Mock
     private Neo4JElementIdProvider provider;
 
+    @Mock
+    private StatementResult statementResult;
+
     @Test
-    public void givenNewGraphShouldCreateNewSession() {
+    public void givenTextCypherStatementShouldExecuteIt() {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
+        Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
+        Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
-            try (Neo4JSession neo4JSession = graph.currentSession()) {
-                // assert
-                Assert.assertNotNull("Failed to create Neo4JSession instance", neo4JSession);
-            }
+            StatementResult result = graph.execute("MATCH (n) RETURN n");
+            // assert
+            Assert.assertNotNull("Failed to execute CYPHER statement", result);
+            Mockito.verify(transaction, Mockito.times(1)).run(Mockito.any(Statement.class));
         }
     }
 
     @Test
-    public void givenGraphWithSessionShouldReturnSameSession() {
+    public void givenCypherStatementShouldExecuteIt() {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
+        Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
+        Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
-            try (Neo4JSession neo4JSession1 = graph.currentSession()) {
-                Assert.assertNotNull("Failed to create Neo4JSession instance", neo4JSession1);
-                // act
-                Neo4JSession neo4JSession2 = graph.currentSession();
-                // assert
-                Assert.assertNotNull("Failed to return Neo4JSession instance", neo4JSession2);
-                Assert.assertEquals("Failed to return same session", neo4JSession1, neo4JSession2);
-            }
+            // act
+            StatementResult result = graph.execute(new Statement("MATCH (n) RETURN n"));
+            // assert
+            Assert.assertNotNull("Failed to execute CYPHER statement", result);
+            Mockito.verify(transaction, Mockito.times(1)).run(Mockito.any(Statement.class));
         }
     }
 
     @Test
-    public void givenGraphWithSessionShouldReturnAnotherSessionFromADifferentThread() throws InterruptedException {
+    public void givenCypherStatementWithParametersShouldExecuteIt() {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
+        Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
+        Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
         Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
-            try (final Neo4JSession neo4JSession1 = graph.currentSession()) {
-                Assert.assertNotNull("Failed to create Neo4JSession instance", neo4JSession1);
-                // act
-                Thread thread = new Thread(() -> {
-                    try (Neo4JSession neo4JSession2 = graph.currentSession()) {
-                        // assert
-                        Assert.assertNotNull("Failed to return Neo4JSession instance", neo4JSession2);
-                        Assert.assertNotEquals("Using the same session from a different thread", neo4JSession1, neo4JSession2);
-                    }
-                });
-                thread.start();
-                thread.join();
-            }
+            // act
+            StatementResult result = graph.execute("MATCH (n{id: {id}}) RETURN n", Collections.singletonMap("id", 10));
+            // assert
+            Assert.assertNotNull("Failed to execute CYPHER statement", result);
+            Mockito.verify(transaction, Mockito.times(1)).run(Mockito.any(Statement.class));
         }
     }
 }
