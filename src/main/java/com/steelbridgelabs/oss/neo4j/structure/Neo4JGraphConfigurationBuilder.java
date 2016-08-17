@@ -34,7 +34,6 @@ public final class Neo4JGraphConfigurationBuilder {
     public static final String Neo4JPortConfigurationKey = "neo4j.port";
     public static final String Neo4JUsernameConfigurationKey = "neo4j.username";
     public static final String Neo4JPasswordConfigurationKey = "neo4j.password";
-    public static final String Neo4JConnectionPoolSizeConfigurationKey = "neo4j.connection.pool.size";
     public static final String Neo4JVertexIdProviderClassNameConfigurationKey = "neo4j.vertexIdProvider";
     public static final String Neo4JEdgeIdProviderClassNameConfigurationKey = "neo4j.edgeIdProvider";
     public static final String Neo4JPropertyIdProviderClassNameConfigurationKey = "neo4j.propertyIdProvider";
@@ -48,7 +47,6 @@ public final class Neo4JGraphConfigurationBuilder {
     private String edgeIdProviderClassName = null;
     private String propertyIdProviderClassName = null;
     private String elementIdProviderClassName = null;
-    private int connectionPoolSize = 50;
 
     private Neo4JGraphConfigurationBuilder(String hostname, short port, String username, String password) {
         Objects.requireNonNull(hostname, "hostname cannot be null");
@@ -110,13 +108,6 @@ public final class Neo4JGraphConfigurationBuilder {
         return this;
     }
 
-    public Neo4JGraphConfigurationBuilder withConnectionPoolSize(int connectionPoolSize) {
-        // store pool size
-        this.connectionPoolSize = connectionPoolSize;
-        // return builder
-        return this;
-    }
-
     public Configuration build() {
         // create configuration instance
         Configuration configuration = new BaseConfiguration();
@@ -132,8 +123,6 @@ public final class Neo4JGraphConfigurationBuilder {
         configuration.setProperty(Neo4JPasswordConfigurationKey, password);
         // graphName
         configuration.setProperty(Neo4JGraphNameConfigurationKey, graphName);
-        // connection pool size
-        configuration.setProperty(Neo4JConnectionPoolSizeConfigurationKey, connectionPoolSize);
         // vertex id provider
         configuration.setProperty(Neo4JVertexIdProviderClassNameConfigurationKey, vertexIdProviderClassName != null ? vertexIdProviderClassName : elementIdProviderClassName);
         // edge id provider

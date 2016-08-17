@@ -36,7 +36,6 @@ public class Neo4JGraphFactory {
             throw Graph.Exceptions.argumentCanNotBeNull("configuration");
         try {
             Config config = Config.build()
-                .withMaxSessions(configuration.getInt(Neo4JGraphConfigurationBuilder.Neo4JConnectionPoolSizeConfigurationKey))
                 .toConfig();
             // graph name
             String graphName = configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JGraphNameConfigurationKey);

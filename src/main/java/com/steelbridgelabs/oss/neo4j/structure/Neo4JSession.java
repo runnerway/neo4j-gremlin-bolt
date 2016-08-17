@@ -414,6 +414,12 @@ class Neo4JSession implements AutoCloseable {
             .filter(edge -> edge != null);
     }
 
+    StatementResult execute(Statement statement) {
+        Objects.requireNonNull(statement, "statement cannot be null");
+        // execute statement (use transaction if available)
+        return executeStatement(statement);
+    }
+
     private static <T> Iterator<T> combine(Stream<T> collection, Stream<T> query) {
         // create a copy of first stream (state can be modified in the middle of the iteration)
         List<T> copy = collection.collect(Collectors.toCollection(LinkedList::new));
@@ -501,13 +507,21 @@ class Neo4JSession implements AutoCloseable {
         Object vertexId = node.get(vertexIdFieldName).asObject();
         // check vertex has been deleted
         if (!deletedVertices.contains(vertexId)) {
-            // check node belongs to partition
-            if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
-                // create and register vertex
-                return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, node));
+            // check this vertex has been already loaded into this session
+            Vertex vertex = vertices.get(vertexId);
+            if (vertex == null) {
+                // check node belongs to partition
+                if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
+                    // create and register vertex
+                    return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, node));
+                }
+                // skip vertex (not in partition)
+                return null;
             }
+            // return vertex
+            return vertex;
         }
-        // skip vertex
+        // skip vertex (deleted)
         return null;
     }
 
