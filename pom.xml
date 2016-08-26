@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-gremlin-bolt</artifactId>
-    <version>0.2.4</version>
+    <version>0.2.5</version>
     <packaging>jar</packaging>
     <name>SteelBridge Labs Neo4J Gremlin (Bolt) integration</name>
     <description>SteelBridge Labs Neo4J Gremlin (Bolt) integration</description>
@@ -82,11 +82,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-groovy</artifactId>
-            <version>${gremlin.version}</version>
-        </dependency>
         <!-- neo4j -->
         <dependency>
             <groupId>org.neo4j.driver</groupId>
@@ -98,6 +93,13 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <!-- integration tests -->
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-test</artifactId>
+            <version>${gremlin.version}</version>
+            <scope>test</scope>
         </dependency>
         <!-- test -->
         <dependency>
@@ -151,20 +153,6 @@
         </profile>
         <profile>
             <id>integration-test</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.tinkerpop</groupId>
-                    <artifactId>gremlin-test</artifactId>
-                    <version>${gremlin.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.tinkerpop</groupId>
-                    <artifactId>gremlin-groovy-test</artifactId>
-                    <version>${gremlin.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
             <build>
                 <testResources>
                     <testResource>

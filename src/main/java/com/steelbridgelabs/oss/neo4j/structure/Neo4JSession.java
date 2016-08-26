@@ -18,6 +18,7 @@
 
 package com.steelbridgelabs.oss.neo4j.structure;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -28,8 +29,13 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.summary.InputPosition;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Relationship;
 import org.slf4j.Logger;
@@ -41,6 +47,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -54,6 +61,167 @@ import java.util.stream.StreamSupport;
  * @author Rogelio J. Baucells
  */
 class Neo4JSession implements AutoCloseable {
+
+    private static class ProfileInformation {
+
+        private static class ProfileInformationDetails {
+
+            private int level;
+            private int indentationLevel;
+            private String operator;
+            private String estimatedRows;
+            private String rows;
+            private String dbHits;
+            private String variables;
+        }
+
+        private static final String OperatorColumnName = "Operator";
+        private static final String EstimatedRowsColumnName = "Estimated Rows";
+        private static final String RowsColumnName = "Rows";
+        private static final String DBHitsColumnName = "DB Hits";
+        private static final String VariablesColumnName = "Variables";
+
+        private final List<ProfileInformationDetails> details = new LinkedList<>();
+
+        private int operatorLength = OperatorColumnName.length();
+        private int estimatedRowsLength = EstimatedRowsColumnName.length();
+        private int rowsLength = RowsColumnName.length();
+        private int dbHitsLength = DBHitsColumnName.length();
+        private int variablesLength = VariablesColumnName.length();
+
+        public void process(ProfiledPlan profilePlan) {
+            Objects.requireNonNull(profilePlan, "profilePlan cannot be null");
+            // process plan
+            process(profilePlan, 0, 0);
+        }
+
+        private void process(ProfiledPlan profilePlan, int level, int indentationLevel) {
+            // create details instance
+            ProfileInformationDetails information = new ProfileInformationDetails();
+            // operator
+            information.operator = printOperator(profilePlan.operatorType(), indentationLevel);
+            // arguments
+            Map<String, Value> arguments = profilePlan.arguments();
+            // compile information
+            information.level = level;
+            information.indentationLevel = indentationLevel;
+            information.estimatedRows = printEstimatedRows(arguments.get("EstimatedRows"));
+            information.rows = String.format(Locale.US, "%d", profilePlan.records());
+            information.dbHits = String.format(Locale.US, "%d", profilePlan.dbHits());
+            information.variables = profilePlan.identifiers().stream().map(String::trim).collect(Collectors.joining(", "));
+            // append to list
+            add(information);
+            // first child will be indented as parent
+            boolean first = true;
+            // process children
+            for (ProfiledPlan child : profilePlan.children()) {
+                // process child
+                process(child, level, level + (first ? 0 : 1));
+                // update flag
+                first = false;
+            }
+        }
+
+        private void add(ProfileInformationDetails information) {
+            // update statistics
+            operatorLength = information.operator.length() - 2 > operatorLength ? information.operator.length() - 2 : operatorLength;
+            estimatedRowsLength = information.estimatedRows.length() > estimatedRowsLength ? information.estimatedRows.length() : estimatedRowsLength;
+            rowsLength = information.rows.length() > rowsLength ? information.rows.length() : rowsLength;
+            dbHitsLength = information.dbHits.length() > dbHitsLength ? information.dbHits.length() : dbHitsLength;
+            variablesLength = information.variables.length() > variablesLength ? information.variables.length() : variablesLength;
+            // append to list
+            details.add(information);
+        }
+
+        private static String printOperator(String operator, int indentationLevel) {
+            // create builder
+            StringBuilder builder = new StringBuilder();
+            // process indentation level
+            for (int i = 0; i <= indentationLevel; i++)
+                builder.append("| ");
+            // append operator
+            builder.append("+").append(operator);
+            // return text
+            return builder.toString();
+        }
+
+        private static String printEstimatedRows(Value estimatedRows) {
+            // format number
+            return estimatedRows != null ? String.format(Locale.US, "%d", (long)estimatedRows.asDouble()) : "";
+        }
+
+        @Override
+        public String toString() {
+            // create string builder
+            StringBuilder builder = new StringBuilder("\n");
+            // header
+            builder.append("+-")
+                .append(StringUtils.repeat("-", operatorLength)).append("-+-")
+                .append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-")
+                .append(StringUtils.repeat("-", rowsLength)).append("-+-")
+                .append(StringUtils.repeat("-", dbHitsLength)).append("-+-")
+                .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
+            builder.append("| ")
+                .append(OperatorColumnName).append(StringUtils.repeat(" ", operatorLength - OperatorColumnName.length())).append(" + ")
+                .append(EstimatedRowsColumnName).append(StringUtils.repeat(" ", estimatedRowsLength - EstimatedRowsColumnName.length())).append(" + ")
+                .append(RowsColumnName).append(StringUtils.repeat(" ", rowsLength - RowsColumnName.length())).append(" + ")
+                .append(DBHitsColumnName).append(StringUtils.repeat(" ", dbHitsLength - DBHitsColumnName.length())).append(" + ")
+                .append(VariablesColumnName).append(StringUtils.repeat(" ", variablesLength - VariablesColumnName.length())).append(" |\n");
+            builder.append("+-")
+                .append(StringUtils.repeat("-", operatorLength)).append("-+-")
+                .append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-")
+                .append(StringUtils.repeat("-", rowsLength)).append("-+-")
+                .append(StringUtils.repeat("-", dbHitsLength)).append("-+-")
+                .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
+            // running state
+            boolean first = true;
+            // loop details
+            for (ProfileInformationDetails item : details) {
+                // append line separator if needed
+                if (!first) {
+                    // process indentation level
+                    for (int i = 0; i <= item.indentationLevel; i++)
+                        builder.append("| ");
+                    builder.append(item.indentationLevel < item.level ? "|\\" : "| ");
+                    // operator
+                    builder.append(StringUtils.repeat(" ", operatorLength - item.indentationLevel * 2 - 2)).append(" +-");
+                    // estimated rows
+                    builder.append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-");
+                    // rows
+                    builder.append(StringUtils.repeat("-", rowsLength)).append("-+-");
+                    // db hits
+                    builder.append(StringUtils.repeat("-", dbHitsLength)).append("-+-");
+                    // variables
+                    builder.append(StringUtils.repeat("-", variablesLength)).append("-+");
+                    // end of header
+                    builder.append("\n");
+                }
+                // operator
+                builder.append(item.operator).append(StringUtils.repeat(" ", operatorLength - item.operator.length() + 2)).append(" |");
+                // estimated rows
+                builder.append(" ").append(StringUtils.repeat(" ", estimatedRowsLength - item.estimatedRows.length())).append(item.estimatedRows).append(" |");
+                // rows
+                builder.append(" ").append(StringUtils.repeat(" ", rowsLength - item.rows.length())).append(item.rows).append(" |");
+                // db hits
+                builder.append(" ").append(StringUtils.repeat(" ", dbHitsLength - item.dbHits.length())).append(item.dbHits).append(" |");
+                // variables
+                builder.append(" ").append(item.variables).append(StringUtils.repeat(" ", variablesLength - item.variables.length())).append(" |");
+                // close row
+                builder.append("\n");
+                // update running state
+                first = false;
+            }
+            // footer
+            builder.append("+-")
+                .append(StringUtils.repeat("-", operatorLength)).append("-+-")
+                .append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-")
+                .append(StringUtils.repeat("-", rowsLength)).append("-+-")
+                .append(StringUtils.repeat("-", dbHitsLength)).append("-+-")
+                .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
+            // return table
+            return builder.toString();
+        }
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(Neo4JSession.class);
 
@@ -296,10 +464,16 @@ class Neo4JSession implements AutoCloseable {
                     String predicate = partition.vertexMatchPredicate("n");
                     // cypher statement
                     Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE n." + vertexIdFieldName + " in {ids}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("ids", filter));
+                    // execute statement
+                    StatementResult result = executeStatement(statement);
                     // create stream from query
-                    Stream<Vertex> query = vertices(statement);
+                    Stream<Vertex> query = vertices(result);
                     // combine stream from memory and query result
-                    return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), query);
+                    Iterator<Vertex> iterator = combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), query);
+                    // process summary (query has been already consumed by combine)
+                    processResultSummary(result.consume());
+                    // return iterator
+                    return iterator;
                 }
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), Stream.empty());
@@ -308,10 +482,14 @@ class Neo4JSession implements AutoCloseable {
             String predicate = partition.vertexMatchPredicate("n");
             // cypher statement for all vertices
             Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + (predicate != null ? " WHERE " + predicate : "") + " RETURN n");
+            // execute statement
+            StatementResult result = executeStatement(statement);
             // create stream from query
-            Stream<Vertex> query = vertices(statement);
+            Stream<Vertex> query = vertices(result);
             // combine stream from memory (transient) and query result
             Iterator<Vertex> iterator = combine(transientVertices.stream().map(vertex -> (Vertex)vertex), query);
+            // process summary (query has been already consumed by combine)
+            processResultSummary(result.consume());
             // it is safe to update loaded flag at this time
             verticesLoaded = true;
             // return iterator
@@ -335,10 +513,8 @@ class Neo4JSession implements AutoCloseable {
             .iterator();
     }
 
-    Stream<Vertex> vertices(Statement statement) {
-        Objects.requireNonNull(statement, "statement cannot be null");
-        // execute statement (use transaction if available)
-        StatementResult result = executeStatement(statement);
+    Stream<Vertex> vertices(StatementResult result) {
+        Objects.requireNonNull(result, "result cannot be null");
         // create stream from result, skip deleted vertices
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(result, Spliterator.NONNULL | Spliterator.IMMUTABLE), false)
             .map(this::loadVertex)
@@ -364,10 +540,16 @@ class Neo4JSession implements AutoCloseable {
                     String inVertexPredicate = partition.vertexMatchPredicate("m");
                     // cypher statement
                     Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE r." + edgeIdFieldName + " in {ids}" + (outVertexPredicate != null && inVertexPredicate != null ? " AND " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m", Values.parameters("ids", filter));
+                    // execute statement
+                    StatementResult result = executeStatement(statement);
                     // find edges
-                    Stream<Edge> query = edges(statement);
+                    Stream<Edge> query = edges(result);
                     // combine stream from memory and query result
-                    return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), query);
+                    Iterator<Edge> iterator = combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), query);
+                    // process summary (query has been already consumed by combine)
+                    processResultSummary(result.consume());
+                    // return iterator
+                    return iterator;
                 }
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
@@ -377,10 +559,14 @@ class Neo4JSession implements AutoCloseable {
             String inVertexPredicate = partition.vertexMatchPredicate("m");
             // cypher statement for all edges in database
             Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + (outVertexPredicate != null && inVertexPredicate != null ? " WHERE " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m");
+            // execute statement
+            StatementResult result = executeStatement(statement);
             // find edges
-            Stream<Edge> query = edges(statement);
+            Stream<Edge> query = edges(result);
             // combine stream from memory (transient) and query result
             Iterator<Edge> iterator = combine(transientEdges.stream().map(edge -> (Edge)edge), query);
+            // process summary (query has been already consumed by combine)
+            processResultSummary(result.consume());
             // it is safe to update loaded flag at this time
             edgesLoaded = true;
             // return iterator
@@ -404,20 +590,12 @@ class Neo4JSession implements AutoCloseable {
             .iterator();
     }
 
-    Stream<Edge> edges(Statement statement) {
-        Objects.requireNonNull(statement, "statement cannot be null");
-        // execute statement (use transaction if available)
-        StatementResult result = executeStatement(statement);
+    Stream<Edge> edges(StatementResult result) {
+        Objects.requireNonNull(result, "result cannot be null");
         // create stream from result, skip deleted edges
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(result, Spliterator.NONNULL | Spliterator.IMMUTABLE), false)
             .map(this::loadEdge)
             .filter(edge -> edge != null);
-    }
-
-    StatementResult execute(Statement statement) {
-        Objects.requireNonNull(statement, "statement cannot be null");
-        // execute statement (use transaction if available)
-        return executeStatement(statement);
     }
 
     private static <T> Iterator<T> combine(Stream<T> collection, Stream<T> query) {
@@ -751,9 +929,38 @@ class Neo4JSession implements AutoCloseable {
         catch (ClientException ex) {
             // log error
             if (logger.isErrorEnabled())
-                logger.error("Error executing Cypher statement in session [{}]", session.hashCode(), ex);
+                logger.error("Error executing Cypher statement on transaction [{}]", transaction.hashCode(), ex);
             // throw original exception
             throw ex;
+        }
+    }
+
+    static void processResultSummary(ResultSummary summary) {
+        Objects.requireNonNull(summary, "summary cannot be null");
+        // log information
+        if (logger.isInfoEnabled() && summary.hasProfile()) {
+            // create builder
+            StringBuilder builder = new StringBuilder();
+            // append statement
+            builder.append("Summary for CYPHER statement: ").append(summary.statement()).append("\n");
+            // create profile information
+            ProfileInformation profileInformation = new ProfileInformation();
+            // process profile
+            profileInformation.process(summary.profile());
+            // log tabular results
+            builder.append(profileInformation.toString());
+            // log information
+            logger.info(builder.toString());
+        }
+        // log notifications
+        if (logger.isWarnEnabled()) {
+            // loop notifications
+            for (Notification notification : summary.notifications()) {
+                // position if any
+                InputPosition position = notification.position();
+                // log information
+                logger.warn("CYPHER statement [{}] notification; severity: {}, code: {}, title: {}, description: {}{}", summary.statement(), notification.severity(), notification.code(), notification.title(), notification.description(), position != null ? ", [line: " + position.line() + ", position: " + position.column() + ", offset: " + position.offset() + "]" : "");
+            }
         }
     }
 

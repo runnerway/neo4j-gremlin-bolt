@@ -155,7 +155,9 @@
             <property name="allowedAbbreviationLength" value="2" />
         </module>
         <module name="OverloadMethodsDeclarationOrder" />
-        <module name="VariableDeclarationUsageDistance" />
+        <module name="VariableDeclarationUsageDistance">
+            <property name="allowedDistance" value="4" />
+        </module>
         <module name="ImportOrder">
             <property name="groups" value="*,javax,java" />
             <property name="ordered" value="true" />
