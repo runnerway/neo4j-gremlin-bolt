@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Node;
@@ -440,16 +441,20 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 builder.append(" RETURN n, r, m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
+                // execute statement
+                StatementResult result = session.executeStatement(statement);
                 // execute command
-                Stream<Edge> query = session.edges(statement);
+                Stream<Edge> query = session.edges(result);
                 // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
-                Iterator<Edge> result = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(edge -> (Edge)edge), query)
+                Iterator<Edge> iterator = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(edge -> (Edge)edge), query)
                     .collect(Collectors.toList())
                     .iterator();
+                // process summary (query has been already consumed by combine)
+                Neo4JSession.processResultSummary(result.consume());
                 // after this line it is safe to update loaded flag
                 outEdgesLoaded = labels.length == 0;
                 // return iterator
-                return result;
+                return iterator;
             }
             // edges in memory (return copy since edges can be deleted in the middle of the loop)
             return outEdges.stream().filter(edge -> labels.length == 0 || set.contains(edge.label()))
@@ -473,16 +478,20 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 builder.append(" RETURN n, r, m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
+                // execute statement
+                StatementResult result = session.executeStatement(statement);
                 // execute command
-                Stream<Edge> query = session.edges(statement);
+                Stream<Edge> query = session.edges(result);
                 // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
-                Iterator<Edge> result = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
+                Iterator<Edge> iterator = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
                     .collect(Collectors.toList())
                     .iterator();
+                // process summary (query has been already consumed by combine)
+                Neo4JSession.processResultSummary(result.consume());
                 // after this line it is safe to update loaded flag
                 inEdgesLoaded = labels.length == 0;
                 // return iterator
-                return result;
+                return iterator;
             }
             // edges in memory (return copy since edges can be deleted in the middle of the loop)
             return inEdges.stream().filter(edge -> labels.length == 0 || set.contains(edge.label()))
@@ -504,17 +513,21 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             builder.append(" RETURN n, r, m");
             // create statement
             Statement statement = new Statement(builder.toString(), parameters);
+            // execute statement
+            StatementResult result = session.executeStatement(statement);
             // execute command
-            Stream<Edge> query = session.edges(statement);
+            Stream<Edge> query = session.edges(result);
             // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
-            Iterator<Edge> result = Stream.concat(Stream.concat(labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream(), labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
+            Iterator<Edge> iterator = Stream.concat(Stream.concat(labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream(), labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
                 .collect(Collectors.toList())
                 .iterator();
+            // process summary (query has been already consumed by combine)
+            Neo4JSession.processResultSummary(result.consume());
             // after this line it is safe to update loaded flags
             outEdgesLoaded = outEdgesLoaded || labels.length == 0;
             inEdgesLoaded = inEdgesLoaded || labels.length == 0;
             // return iterator
-            return result;
+            return iterator;
         }
         // edges in memory (return copy since edges can be deleted in the middle of the loop)
         return Stream.concat(labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream(), labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream())
@@ -554,12 +567,18 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 builder.append(" RETURN m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
+                // execute statement
+                StatementResult result = session.executeStatement(statement);
                 // execute command
-                Stream<Vertex> query = session.vertices(statement);
+                Stream<Vertex> query = session.vertices(result);
                 // return copy since elements can be deleted in the middle of the loop
-                return Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), query)
+                Iterator<Vertex> iterator = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), query)
                     .collect(Collectors.toList())
                     .iterator();
+                // process summary (query has been already consumed by collector)
+                Neo4JSession.processResultSummary(result.consume());
+                // return iterator
+                return iterator;
             }
             // edges in memory (return copy since elements can be deleted in the middle of the loop)
             return (labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex)
@@ -582,12 +601,18 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 builder.append(" RETURN m");
                 // create statement
                 Statement statement = new Statement(builder.toString(), parameters);
+                // execute statement
+                StatementResult result = session.executeStatement(statement);
                 // execute command
-                Stream<Vertex> query = session.vertices(statement);
+                Stream<Vertex> query = session.vertices(result);
                 // return copy since elements can be deleted in the middle of the loop
-                return Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex), query)
+                Iterator<Vertex> iterator = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex), query)
                     .collect(Collectors.toList())
                     .iterator();
+                // process summary (query has been already consumed by collector)
+                Neo4JSession.processResultSummary(result.consume());
+                // return iterator
+                return iterator;
             }
             // edges in memory (return copy since elements can be deleted in the middle of the loop
             return (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)
@@ -608,12 +633,18 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             builder.append(" RETURN m");
             // create statement
             Statement statement = new Statement(builder.toString(), parameters);
+            // execute statement
+            StatementResult result = session.executeStatement(statement);
             // execute command
-            Stream<Vertex> query = session.vertices(statement);
+            Stream<Vertex> query = session.vertices(result);
             // return copy since elements can be deleted in the middle of the loop
-            return Stream.concat(Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)), query)
+            Iterator<Vertex> iterator = Stream.concat(Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)), query)
                 .collect(Collectors.toList())
                 .iterator();
+            // process summary (query has been already consumed by collector)
+            Neo4JSession.processResultSummary(result.consume());
+            // return iterator
+            return iterator;
         }
         // edges in memory (return copy since edges can be deleted in the middle of the loop)
         return Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex))

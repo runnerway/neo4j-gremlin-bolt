@@ -250,35 +250,29 @@ public class Neo4JGraph implements Graph {
         Neo4JSession session = currentSession();
         // transaction should be ready for io operations
         transaction.readWrite();
+        // execute statement
+        StatementResult result = session.executeStatement(statement);
         // find vertices
-        return session.vertices(statement)
+        Iterator<Vertex> iterator = session.vertices(result)
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
+        // process summary (query has been already consumed by collect)
+        Neo4JSession.processResultSummary(result.consume());
+        // return iterator
+        return iterator;
     }
 
     public Iterator<Vertex> vertices(String statement) {
         Objects.requireNonNull(statement, "statement cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // find vertices
-        return session.vertices(new Statement(statement))
-            .collect(Collectors.toCollection(LinkedList::new))
-            .iterator();
+        // use overloaded method
+        return vertices(new Statement(statement));
     }
 
     public Iterator<Vertex> vertices(String statement, Map<String, Object> parameters) {
         Objects.requireNonNull(statement, "statement cannot be null");
         Objects.requireNonNull(parameters, "parameters cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // find vertices
-        return session.vertices(new Statement(statement, parameters))
-            .collect(Collectors.toCollection(LinkedList::new))
-            .iterator();
+        // use overloaded method
+        return vertices(new Statement(statement, parameters));
     }
 
     /**
@@ -300,35 +294,29 @@ public class Neo4JGraph implements Graph {
         Neo4JSession session = currentSession();
         // transaction should be ready for io operations
         transaction.readWrite();
+        // execute statement
+        StatementResult result = session.executeStatement(statement);
         // find edges
-        return session.edges(statement)
+        Iterator<Edge> iterator = session.edges(result)
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
+        // process summary (query has been already consumed by collect)
+        Neo4JSession.processResultSummary(result.consume());
+        // return iterator
+        return iterator;
     }
 
     public Iterator<Edge> edges(String statement) {
         Objects.requireNonNull(statement, "statement cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // find edges
-        return session.edges(new Statement(statement))
-            .collect(Collectors.toCollection(LinkedList::new))
-            .iterator();
+        // use overloaded method
+        return edges(new Statement(statement));
     }
 
     public Iterator<Edge> edges(String statement, Map<String, Object> parameters) {
         Objects.requireNonNull(statement, "statement cannot be null");
         Objects.requireNonNull(parameters, "parameters cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // find edges
-        return session.edges(new Statement(statement, parameters))
-            .collect(Collectors.toCollection(LinkedList::new))
-            .iterator();
+        // use overloaded method
+        return edges(new Statement(statement, parameters));
     }
 
     /**
@@ -345,7 +333,7 @@ public class Neo4JGraph implements Graph {
         // transaction should be ready for io operations
         transaction.readWrite();
         // find execute statement
-        return session.execute(statement);
+        return session.executeStatement(statement);
     }
 
     /**
@@ -362,7 +350,7 @@ public class Neo4JGraph implements Graph {
         // transaction should be ready for io operations
         transaction.readWrite();
         // find execute statement
-        return session.execute(new Statement(statement));
+        return session.executeStatement(new Statement(statement));
     }
 
     /**
@@ -381,7 +369,7 @@ public class Neo4JGraph implements Graph {
         // transaction should be ready for io operations
         transaction.readWrite();
         // find execute statement
-        return session.execute(new Statement(statement, parameters));
+        return session.executeStatement(new Statement(statement, parameters));
     }
 
     /**
