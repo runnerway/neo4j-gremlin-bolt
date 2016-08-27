@@ -66,7 +66,6 @@ class Neo4JSession implements AutoCloseable {
 
         private static class ProfileInformationDetails {
 
-            private int level;
             private int indentationLevel;
             private String operator;
             private String estimatedRows;
@@ -92,10 +91,10 @@ class Neo4JSession implements AutoCloseable {
         public void process(ProfiledPlan profilePlan) {
             Objects.requireNonNull(profilePlan, "profilePlan cannot be null");
             // process plan
-            process(profilePlan, 0, 0);
+            process(profilePlan, 0);
         }
 
-        private void process(ProfiledPlan profilePlan, int level, int indentationLevel) {
+        private void process(ProfiledPlan profilePlan, int indentationLevel) {
             // create details instance
             ProfileInformationDetails information = new ProfileInformationDetails();
             // operator
@@ -103,7 +102,6 @@ class Neo4JSession implements AutoCloseable {
             // arguments
             Map<String, Value> arguments = profilePlan.arguments();
             // compile information
-            information.level = level;
             information.indentationLevel = indentationLevel;
             information.estimatedRows = printEstimatedRows(arguments.get("EstimatedRows"));
             information.rows = String.format(Locale.US, "%d", profilePlan.records());
@@ -111,14 +109,14 @@ class Neo4JSession implements AutoCloseable {
             information.variables = profilePlan.identifiers().stream().map(String::trim).collect(Collectors.joining(", "));
             // append to list
             add(information);
-            // first child will be indented as parent
-            boolean first = true;
-            // process children
-            for (ProfiledPlan child : profilePlan.children()) {
+            // children
+            List<ProfiledPlan> children = profilePlan.children();
+            // process children (backwards)
+            for (int i = children.size() - 1; i >= 0; i--) {
+                // current child
+                ProfiledPlan child = children.get(i);
                 // process child
-                process(child, level, level + (first ? 0 : 1));
-                // update flag
-                first = false;
+                process(child, indentationLevel + i);
             }
         }
 
@@ -175,14 +173,26 @@ class Neo4JSession implements AutoCloseable {
                 .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
             // running state
             boolean first = true;
+            int lastIndentationLevel = -1;
             // loop details
             for (ProfileInformationDetails item : details) {
                 // append line separator if needed
                 if (!first) {
-                    // process indentation level
-                    for (int i = 0; i <= item.indentationLevel; i++)
+                    // check indentation level changed
+                    if (lastIndentationLevel < item.indentationLevel) {
+                        // process indentation level
+                        for (int i = 0; i < item.indentationLevel; i++)
+                            builder.append("| ");
+                        // append last level
+                        builder.append("|\\  ");
+                    }
+                    else {
+                        // process indentation level
+                        for (int i = 0; i <= item.indentationLevel; i++)
+                            builder.append("| ");
+                        // append last level
                         builder.append("| ");
-                    builder.append(item.indentationLevel < item.level ? "|\\" : "| ");
+                    }
                     // operator
                     builder.append(StringUtils.repeat(" ", operatorLength - item.indentationLevel * 2 - 2)).append(" +-");
                     // estimated rows
@@ -210,6 +220,7 @@ class Neo4JSession implements AutoCloseable {
                 builder.append("\n");
                 // update running state
                 first = false;
+                lastIndentationLevel = item.indentationLevel;
             }
             // footer
             builder.append("+-")
@@ -247,6 +258,7 @@ class Neo4JSession implements AutoCloseable {
     private org.neo4j.driver.v1.Transaction transaction;
     private boolean verticesLoaded = false;
     private boolean edgesLoaded = false;
+    private boolean profilerEnabled = false;
 
     public Neo4JSession(Neo4JGraph graph, Session session, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider) {
         Objects.requireNonNull(graph, "graph cannot be null");
@@ -444,6 +456,14 @@ class Neo4JSession implements AutoCloseable {
         }
         // vertex match
         return "(" + alias + ")";
+    }
+
+    boolean isProfilerEnabled() {
+        return profilerEnabled;
+    }
+
+    void setProfilerEnabled(boolean profilerEnabled) {
+        this.profilerEnabled = profilerEnabled;
     }
 
     public Iterator<Vertex> vertices(Object[] ids) {
@@ -920,11 +940,27 @@ class Neo4JSession implements AutoCloseable {
 
     StatementResult executeStatement(Statement statement) {
         try {
+            // statement to execute
+            Statement cypherStatement = statement;
+            // check we need to modify statement
+            if (profilerEnabled && logger.isInfoEnabled()) {
+                // statement text
+                String text  = cypherStatement.text();
+                if (text != null) {
+                    // use upper case
+                    text = text.toUpperCase(Locale.US);
+                    // check we can append PROFILE to current statement
+                    if (!text.startsWith("PROFILE") && !text.startsWith("EXPLAIN")) {
+                        // create new statement
+                        cypherStatement = new Statement("PROFILE " + statement.text(), statement.parameters());
+                    }
+                }
+            }
             // log information
             if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
+                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), cypherStatement.toString());
             // execute on transaction
-            return transaction.run(statement);
+            return transaction.run(cypherStatement);
         }
         catch (ClientException ex) {
             // log error
@@ -942,7 +978,7 @@ class Neo4JSession implements AutoCloseable {
             // create builder
             StringBuilder builder = new StringBuilder();
             // append statement
-            builder.append("Summary for CYPHER statement: ").append(summary.statement()).append("\n");
+            builder.append("Profile for CYPHER statement: ").append(summary.statement()).append("\n");
             // create profile information
             ProfileInformation profileInformation = new ProfileInformation();
             // process profile

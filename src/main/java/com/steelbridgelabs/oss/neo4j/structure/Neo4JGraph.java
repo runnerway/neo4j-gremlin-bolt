@@ -345,12 +345,8 @@ public class Neo4JGraph implements Graph {
      */
     public StatementResult execute(String statement) {
         Objects.requireNonNull(statement, "statement cannot be null");
-        // get current session
-        Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // find execute statement
-        return session.executeStatement(new Statement(statement));
+        // use overloaded method
+        return execute(new Statement(statement));
     }
 
     /**
@@ -364,12 +360,22 @@ public class Neo4JGraph implements Graph {
     public StatementResult execute(String statement, Map<String, Object> parameters) {
         Objects.requireNonNull(statement, "statement cannot be null");
         Objects.requireNonNull(parameters, "parameters cannot be null");
+        // use overloaded method
+        return execute(new Statement(statement, parameters));
+    }
+
+    public boolean isProfilerEnabled() {
         // get current session
         Neo4JSession session = currentSession();
-        // transaction should be ready for io operations
-        transaction.readWrite();
-        // find execute statement
-        return session.executeStatement(new Statement(statement, parameters));
+        // get from session
+        return session.isProfilerEnabled();
+    }
+
+    public void setProfilerEnabled(boolean value) {
+        // get current session
+        Neo4JSession session = currentSession();
+        // enable/disable profiler
+        session.setProfilerEnabled(value);
     }
 
     /**
