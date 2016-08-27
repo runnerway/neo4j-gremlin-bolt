@@ -56,14 +56,13 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
     // create id provider instances
     vertexIdProvider = ...
     edgeIdProvider = ...
-    propertyIdProvider = ...
 ```
 
 * Create [Graph](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Graph.html) instance.
 
 ```java
     // create graph instance
-    try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider)) {
+    try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider)) {
         
     }
 ```
@@ -74,7 +73,7 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 ```java
     // create graph instance
-    try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider, propertyIdProvider)) {
+    try (Graph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider)) {
         // begin transaction
         try (Transaction transaction = graph.tx()) {
             // use Graph API to create, update and delete Vertices and Edges
