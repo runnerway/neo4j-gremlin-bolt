@@ -94,13 +94,6 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <!-- integration tests -->
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-test</artifactId>
-            <version>${gremlin.version}</version>
-            <scope>test</scope>
-        </dependency>
         <!-- test -->
         <dependency>
             <groupId>junit</groupId>
@@ -153,6 +146,15 @@
         </profile>
         <profile>
             <id>integration-test</id>
+            <dependencies>
+                <!-- integration tests -->
+                <dependency>
+                    <groupId>org.apache.tinkerpop</groupId>
+                    <artifactId>gremlin-test</artifactId>
+                    <version>${gremlin.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
             <build>
                 <testResources>
                     <testResource>
