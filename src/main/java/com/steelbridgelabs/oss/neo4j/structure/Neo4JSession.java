@@ -772,7 +772,7 @@ class Neo4JSession implements AutoCloseable {
             // statement to execute
             Statement cypherStatement = statement;
             // check we need to modify statement
-            if (profilerEnabled && logger.isInfoEnabled()) {
+            if (profilerEnabled) {
                 // statement text
                 String text  = cypherStatement.text();
                 if (text != null) {
