@@ -18,6 +18,7 @@
 
 package com.steelbridgelabs.oss.neo4j.structure;
 
+import com.steelbridgelabs.oss.neo4j.structure.summary.ResultSummaryLogger;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -450,7 +451,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     .collect(Collectors.toList())
                     .iterator();
                 // process summary (query has been already consumed by combine)
-                Neo4JSession.processResultSummary(result.consume());
+                ResultSummaryLogger.log(result.consume());
                 // after this line it is safe to update loaded flag
                 outEdgesLoaded = labels.length == 0;
                 // return iterator
@@ -487,7 +488,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     .collect(Collectors.toList())
                     .iterator();
                 // process summary (query has been already consumed by combine)
-                Neo4JSession.processResultSummary(result.consume());
+                ResultSummaryLogger.log(result.consume());
                 // after this line it is safe to update loaded flag
                 inEdgesLoaded = labels.length == 0;
                 // return iterator
@@ -522,7 +523,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 .collect(Collectors.toList())
                 .iterator();
             // process summary (query has been already consumed by combine)
-            Neo4JSession.processResultSummary(result.consume());
+            ResultSummaryLogger.log(result.consume());
             // after this line it is safe to update loaded flags
             outEdgesLoaded = outEdgesLoaded || labels.length == 0;
             inEdgesLoaded = inEdgesLoaded || labels.length == 0;
@@ -576,7 +577,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     .collect(Collectors.toList())
                     .iterator();
                 // process summary (query has been already consumed by collector)
-                Neo4JSession.processResultSummary(result.consume());
+                ResultSummaryLogger.log(result.consume());
                 // return iterator
                 return iterator;
             }
@@ -610,7 +611,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     .collect(Collectors.toList())
                     .iterator();
                 // process summary (query has been already consumed by collector)
-                Neo4JSession.processResultSummary(result.consume());
+                ResultSummaryLogger.log(result.consume());
                 // return iterator
                 return iterator;
             }
@@ -642,7 +643,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 .collect(Collectors.toList())
                 .iterator();
             // process summary (query has been already consumed by collector)
-            Neo4JSession.processResultSummary(result.consume());
+            ResultSummaryLogger.log(result.consume());
             // return iterator
             return iterator;
         }

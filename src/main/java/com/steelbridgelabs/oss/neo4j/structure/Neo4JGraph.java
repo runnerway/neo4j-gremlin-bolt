@@ -19,6 +19,7 @@
 package com.steelbridgelabs.oss.neo4j.structure;
 
 import com.steelbridgelabs.oss.neo4j.structure.partitions.NoReadPartition;
+import com.steelbridgelabs.oss.neo4j.structure.summary.ResultSummaryLogger;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -257,7 +258,7 @@ public class Neo4JGraph implements Graph {
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
         // process summary (query has been already consumed by collect)
-        Neo4JSession.processResultSummary(result.consume());
+        ResultSummaryLogger.log(result.consume());
         // return iterator
         return iterator;
     }
@@ -301,7 +302,7 @@ public class Neo4JGraph implements Graph {
             .collect(Collectors.toCollection(LinkedList::new))
             .iterator();
         // process summary (query has been already consumed by collect)
-        Neo4JSession.processResultSummary(result.consume());
+        ResultSummaryLogger.log(result.consume());
         // return iterator
         return iterator;
     }

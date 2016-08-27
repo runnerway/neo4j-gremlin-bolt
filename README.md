@@ -84,6 +84,39 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
     }
 ```
 
+## Enabling Neo4J profiler
+
+* Set logger INFO level to the package: com.steelbridgelabs.oss.neo4j.structure.summary 
+
+* Enable profiler to the [Graph](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Graph.html) instance.
+
+```java
+    // create graph instance
+    try (Neo4JGraph graph = new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider)) {
+        // enable profiler
+        graph.setProfilerEnabled(true);
+        
+    }
+```
+
+The library will prefix CYPHER statements with the PROFILE clause dumping the output into the log file, example: 
+
+````
+2016-08-26 23:19:42.226  INFO 98760 --- [-f6753a03391b-1] c.s.o.n.s.summary.ResultSummaryLogger    : Profile for CYPHER statement: Statement{text='PROFILE MATCH (n:Person{id: {id}})-[r:HAS_ADDRESS]->(m) RETURN n, r, m', parameters={id: 1306984}}
+
++----------------------+----------------+------+---------+-----------+
+| Operator             + Estimated Rows + Rows + DB Hits + Variables |
++----------------------+----------------+------+---------+-----------+
+| +ProduceResults      |              0 |    1 |       0 | m, n, r   |
+| |                    +----------------+------+---------+-----------+
+| +Expand(All)         |              0 |    1 |       2 | m, n, r   |
+| |                    +----------------+------+---------+-----------+
+| +Filter              |              0 |    1 |       1 | n         |
+| |                    +----------------+------+---------+-----------+
+| +NodeUniqueIndexSeek |              0 |    1 |       2 | n         |
++----------------------+----------------+------+---------+-----------+
+````
+
 ## Working with Vertices and Edges
 
 ### Create a Vertex
