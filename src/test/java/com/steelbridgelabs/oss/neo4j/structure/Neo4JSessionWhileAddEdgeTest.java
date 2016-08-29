@@ -70,6 +70,7 @@ public class Neo4JSessionWhileAddEdgeTest {
             // assert
             Assert.assertNotNull("Failed to create edge", edge);
             Assert.assertEquals("Failed to assign edge label", "label1", edge.label());
+            Assert.assertTrue("Failed to mark edge as transient", edge.isTransient());
         }
     }
 
@@ -88,6 +89,7 @@ public class Neo4JSessionWhileAddEdgeTest {
             // assert
             Assert.assertNotNull("Failed to create edge", edge);
             Assert.assertEquals("Failed to assign edge id", 1L, edge.id());
+            Assert.assertTrue("Failed to mark edge as transient", edge.isTransient());
         }
     }
 
@@ -105,6 +107,7 @@ public class Neo4JSessionWhileAddEdgeTest {
             Neo4JEdge edge = session.addEdge("label1", outVertex, inVertex, "k1", "v1", "k2", 2L, "k3", true);
             // assert
             Assert.assertNotNull("Failed to create edge", edge);
+            Assert.assertTrue("Failed to mark edge as transient", edge.isTransient());
             Assert.assertNotNull("Failed to assign edge property", edge.property("k1"));
             Assert.assertEquals("Failed to assign edge label", edge.property("k1").value(), "v1");
             Assert.assertNotNull("Failed to assign edge property", edge.property("k2"));
