@@ -42,6 +42,9 @@ public class Neo4JGraphWhileGetPartitionTest {
     @Mock
     private Neo4JElementIdProvider provider;
 
+    @Mock
+    private Neo4JReadPartition partition;
+
     @Test
     public void givenNewGraphShouldCreatePartitionWithAllLabels() {
         // arrange
@@ -54,5 +57,32 @@ public class Neo4JGraphWhileGetPartitionTest {
             Assert.assertNotNull("Failed to create partition", partition);
             Assert.assertTrue("Partition cannot exclude labels", partition.validateLabel("l1"));
         }
+    }
+
+    @Test
+    public void givenPartitionShouldUsePartitionForAllOperations() {
+        // arrange
+        Mockito.when(driver.session()).thenAnswer(invocation -> session);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(partition.containsVertex(Mockito.any())).thenAnswer(invocation -> true);
+        try (Neo4JGraph graph = new Neo4JGraph(partition, new String[0], driver, provider, provider)) {
+            // act
+            Neo4JReadPartition partition = graph.getPartition();
+            // assert
+            Assert.assertNotNull("Failed to create partition", partition);
+            Assert.assertEquals("Invalid partition instance", partition, this.partition);
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void givenVertexLabelsOutsidePartitionShouldThrowException() {
+        // arrange
+        Mockito.when(driver.session()).thenAnswer(invocation -> session);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(partition.containsVertex(Mockito.any())).thenAnswer(invocation -> false);
+        // act
+        new Neo4JGraph(partition, new String[0], driver, provider, provider);
+        // assert
+        Assert.fail("Failed to detect labels outside partition");
     }
 }

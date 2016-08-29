@@ -63,10 +63,11 @@ public class Neo4JGraphWhileAddVertexTest {
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
-            Vertex vertex = graph.addVertex("L1");
+            Neo4JVertex vertex = (Neo4JVertex)graph.addVertex("L1");
             // assert
             Assert.assertNotNull("Failed to create vertex", vertex);
             Assert.assertEquals("Invalid vertex label", vertex.label(), "L1");
+            Assert.assertTrue("Failed to initialize vertex as transient", vertex.isTransient());
         }
     }
 

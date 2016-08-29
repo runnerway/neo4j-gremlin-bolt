@@ -112,4 +112,26 @@ public class Neo4JVertexWhileAddingEdgeTest {
         // assert
         Assert.assertNotNull("Failed to add edge to vertex", edge);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void givenNullVertexShouldThrowException() {
+        // arrange
+        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
+        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(graph.features()).thenAnswer(invocation -> features);
+        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
+        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(session.addEdge(Mockito.eq("A"), Mockito.eq(vertex), Mockito.eq(otherVertex), Mockito.eq("k1"), Mockito.eq(10L))).thenAnswer(invocation -> edge);
+        // act
+        vertex.addEdge("A", null, "k1", 10L);
+        // assert
+        Assert.fail("Failed to detect null vertex");
+    }
 }
