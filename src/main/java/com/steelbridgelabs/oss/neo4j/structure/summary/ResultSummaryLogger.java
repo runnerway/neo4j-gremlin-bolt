@@ -27,6 +27,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +50,7 @@ public class ResultSummaryLogger {
             private String rows;
             private String dbHits;
             private String variables;
+            private String otherInformation;
         }
 
         private static final String OperatorColumnName = "Operator";
@@ -56,6 +58,9 @@ public class ResultSummaryLogger {
         private static final String RowsColumnName = "Rows";
         private static final String DBHitsColumnName = "DB Hits";
         private static final String VariablesColumnName = "Variables";
+        private static final String OtherInformationColumnName = "Other";
+
+        private static final String[] otherInformationArgumentKeys = {"LegacyExpression", "LabelName", "Index", "LegacyIndex", "KeyExpressions", "EntityByIdRhs", "ExpandExpression"};
 
         private final List<ProfileInformationDetails> details = new LinkedList<>();
 
@@ -64,6 +69,7 @@ public class ResultSummaryLogger {
         private int rowsLength = RowsColumnName.length();
         private int dbHitsLength = DBHitsColumnName.length();
         private int variablesLength = VariablesColumnName.length();
+        private int otherInformationLength = OtherInformationColumnName.length();
 
         public void process(ProfiledPlan profilePlan) {
             Objects.requireNonNull(profilePlan, "profilePlan cannot be null");
@@ -84,6 +90,7 @@ public class ResultSummaryLogger {
             information.rows = String.format(Locale.US, "%d", profilePlan.records());
             information.dbHits = String.format(Locale.US, "%d", profilePlan.dbHits());
             information.variables = profilePlan.identifiers().stream().map(String::trim).collect(Collectors.joining(", "));
+            information.otherInformation = printOtherInformation(arguments);
             // append to list
             add(information);
             // children
@@ -104,6 +111,7 @@ public class ResultSummaryLogger {
             rowsLength = information.rows.length() > rowsLength ? information.rows.length() : rowsLength;
             dbHitsLength = information.dbHits.length() > dbHitsLength ? information.dbHits.length() : dbHitsLength;
             variablesLength = information.variables.length() > variablesLength ? information.variables.length() : variablesLength;
+            otherInformationLength = information.otherInformation.length() > otherInformationLength ? information.otherInformation.length() : otherInformationLength;
             // append to list
             details.add(information);
         }
@@ -125,6 +133,15 @@ public class ResultSummaryLogger {
             return estimatedRows != null ? String.format(Locale.US, "%d", (long)estimatedRows.asDouble()) : "";
         }
 
+        private static String printOtherInformation(Map<String, Value> arguments) {
+            // format number
+            return Arrays.stream(otherInformationArgumentKeys)
+                .map(arguments::get)
+                .filter(value -> value != null && !value.isNull())
+                .map(value -> value.asObject().toString())
+                .collect(Collectors.joining(", "));
+        }
+
         @Override
         public String toString() {
             // create string builder
@@ -135,19 +152,22 @@ public class ResultSummaryLogger {
                 .append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-")
                 .append(StringUtils.repeat("-", rowsLength)).append("-+-")
                 .append(StringUtils.repeat("-", dbHitsLength)).append("-+-")
-                .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
+                .append(StringUtils.repeat("-", variablesLength)).append("-+-")
+                .append(StringUtils.repeat("-", otherInformationLength)).append("-+\n");
             builder.append("| ")
                 .append(OperatorColumnName).append(StringUtils.repeat(" ", operatorLength - OperatorColumnName.length())).append(" + ")
                 .append(EstimatedRowsColumnName).append(StringUtils.repeat(" ", estimatedRowsLength - EstimatedRowsColumnName.length())).append(" + ")
                 .append(RowsColumnName).append(StringUtils.repeat(" ", rowsLength - RowsColumnName.length())).append(" + ")
                 .append(DBHitsColumnName).append(StringUtils.repeat(" ", dbHitsLength - DBHitsColumnName.length())).append(" + ")
-                .append(VariablesColumnName).append(StringUtils.repeat(" ", variablesLength - VariablesColumnName.length())).append(" |\n");
+                .append(VariablesColumnName).append(StringUtils.repeat(" ", variablesLength - VariablesColumnName.length())).append(" + ")
+                .append(OtherInformationColumnName).append(StringUtils.repeat(" ", otherInformationLength - OtherInformationColumnName.length())).append(" |\n");
             builder.append("+-")
                 .append(StringUtils.repeat("-", operatorLength)).append("-+-")
                 .append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-")
                 .append(StringUtils.repeat("-", rowsLength)).append("-+-")
                 .append(StringUtils.repeat("-", dbHitsLength)).append("-+-")
-                .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
+                .append(StringUtils.repeat("-", variablesLength)).append("-+-")
+                .append(StringUtils.repeat("-", otherInformationLength)).append("-+\n");
             // running state
             boolean first = true;
             int lastIndentationLevel = -1;
@@ -179,7 +199,9 @@ public class ResultSummaryLogger {
                     // db hits
                     builder.append(StringUtils.repeat("-", dbHitsLength)).append("-+-");
                     // variables
-                    builder.append(StringUtils.repeat("-", variablesLength)).append("-+");
+                    builder.append(StringUtils.repeat("-", variablesLength)).append("-+-");
+                    // other information
+                    builder.append(StringUtils.repeat("-", otherInformationLength)).append("-+");
                     // end of header
                     builder.append("\n");
                 }
@@ -193,6 +215,8 @@ public class ResultSummaryLogger {
                 builder.append(" ").append(StringUtils.repeat(" ", dbHitsLength - item.dbHits.length())).append(item.dbHits).append(" |");
                 // variables
                 builder.append(" ").append(item.variables).append(StringUtils.repeat(" ", variablesLength - item.variables.length())).append(" |");
+                // other information
+                builder.append(" ").append(item.otherInformation).append(StringUtils.repeat(" ", otherInformationLength - item.otherInformation.length())).append(" |");
                 // close row
                 builder.append("\n");
                 // update running state
@@ -205,7 +229,8 @@ public class ResultSummaryLogger {
                 .append(StringUtils.repeat("-", estimatedRowsLength)).append("-+-")
                 .append(StringUtils.repeat("-", rowsLength)).append("-+-")
                 .append(StringUtils.repeat("-", dbHitsLength)).append("-+-")
-                .append(StringUtils.repeat("-", variablesLength)).append("-+\n");
+                .append(StringUtils.repeat("-", variablesLength)).append("-+-")
+                .append(StringUtils.repeat("-", otherInformationLength)).append("-+\n");
             // return table
             return builder.toString();
         }
