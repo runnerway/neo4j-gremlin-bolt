@@ -81,6 +81,7 @@ public class Neo4JVertexWhileRemoveTest {
         // act
         vertex.remove();
         // assert
-        Mockito.verify(session, Mockito.times(1)).removeVertex(Mockito.any());
+        Mockito.verify(transaction, Mockito.times(1)).readWrite();
+        Mockito.verify(session, Mockito.times(1)).removeVertex(Mockito.eq(vertex));
     }
 }

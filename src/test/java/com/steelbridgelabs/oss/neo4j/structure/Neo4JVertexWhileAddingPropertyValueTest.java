@@ -84,7 +84,9 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Assert.assertNotNull("Failed to add property to vertex", result);
         Assert.assertTrue("Property value is not present", result.isPresent());
         Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property key", result.key(), "test");
         Assert.assertEquals("Invalid property value", result.value(), 1L);
+        Assert.assertEquals("Invalid property element", result.element(), vertex);
     }
 
     @Test
@@ -108,14 +110,18 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Assert.assertNotNull("Failed to add property to vertex", result);
         Assert.assertTrue("Property value is not present", result.isPresent());
         Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property key", result.key(), "test");
         Assert.assertEquals("Invalid property value", result.value(), 1L);
+        Assert.assertEquals("Invalid property element", result.element(), vertex);
         // act
         result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
         // assert
         Assert.assertNotNull("Failed to add property to vertex", result);
         Assert.assertTrue("Property value is not present", result.isPresent());
         Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
+        Assert.assertEquals("Invalid property key", result.key(), "test");
         Assert.assertEquals("Invalid property value", result.value(), 1L);
+        Assert.assertEquals("Invalid property element", result.element(), vertex);
         Iterator<Long> values = vertex.values("test");
         Assert.assertTrue("Invalid number of property values", values.hasNext());
         Assert.assertEquals("Invalid property value", values.next(), (Long)1L);
@@ -146,6 +152,7 @@ public class Neo4JVertexWhileAddingPropertyValueTest {
         Assert.assertTrue("Property value is not present", result.isPresent());
         Assert.assertTrue("Failed to set vertex as dirty", vertex.isDirty());
         Assert.assertEquals("Invalid property value", result.value(), 1L);
+        Assert.assertEquals("Invalid property element", result.element(), vertex);
         // act
         result = vertex.property(VertexProperty.Cardinality.set, "test", 1L);
         // assert
