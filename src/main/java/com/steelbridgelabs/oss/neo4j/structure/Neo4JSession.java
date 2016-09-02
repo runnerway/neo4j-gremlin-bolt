@@ -19,7 +19,6 @@
 package com.steelbridgelabs.oss.neo4j.structure;
 
 import com.steelbridgelabs.oss.neo4j.structure.summary.ResultSummaryLogger;
-import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -30,13 +29,8 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.summary.InputPosition;
-import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.summary.ProfiledPlan;
-import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Relationship;
 import org.slf4j.Logger;
@@ -696,7 +690,9 @@ class Neo4JSession implements AutoCloseable {
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
-            transaction.run(statement);
+            StatementResult result = executeStatement(statement);
+            // process summary
+            ResultSummaryLogger.log(result.consume());
         }
     }
 
@@ -710,7 +706,9 @@ class Neo4JSession implements AutoCloseable {
                 if (logger.isDebugEnabled())
                     logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
                 // execute statement
-                transaction.run(statement);
+                StatementResult result = executeStatement(statement);
+                // process summary
+                ResultSummaryLogger.log(result.consume());
             }
         }
     }
@@ -724,7 +722,9 @@ class Neo4JSession implements AutoCloseable {
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
-            transaction.run(statement);
+            StatementResult result = executeStatement(statement);
+            // process summary
+            ResultSummaryLogger.log(result.consume());
         }
     }
 
@@ -737,7 +737,9 @@ class Neo4JSession implements AutoCloseable {
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
-            transaction.run(statement);
+            StatementResult result = executeStatement(statement);
+            // process summary
+            ResultSummaryLogger.log(result.consume());
         }
     }
 
@@ -750,7 +752,9 @@ class Neo4JSession implements AutoCloseable {
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
-            transaction.run(statement);
+            StatementResult result = executeStatement(statement);
+            // process summary
+            ResultSummaryLogger.log(result.consume());
         }
     }
 
@@ -763,7 +767,9 @@ class Neo4JSession implements AutoCloseable {
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
-            transaction.run(statement);
+            StatementResult result = executeStatement(statement);
+            // process summary
+            ResultSummaryLogger.log(result.consume());
         }
     }
 
@@ -774,7 +780,7 @@ class Neo4JSession implements AutoCloseable {
             // check we need to modify statement
             if (profilerEnabled) {
                 // statement text
-                String text  = cypherStatement.text();
+                String text = cypherStatement.text();
                 if (text != null) {
                     // use upper case
                     text = text.toUpperCase(Locale.US);
