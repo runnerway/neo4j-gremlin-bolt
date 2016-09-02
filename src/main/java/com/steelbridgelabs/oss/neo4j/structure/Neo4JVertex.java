@@ -171,6 +171,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private final Map<String, VertexProperty.Cardinality> cardinalities = new HashMap<>();
     private final Set<Neo4JEdge> outEdges = new HashSet<>();
     private final Set<Neo4JEdge> inEdges = new HashSet<>();
+    private final Set<String> outEdgeLabels = new HashSet<>();
+    private final Set<String> inEdgeLabels = new HashSet<>();
     private final SortedSet<String> labelsAdded = new TreeSet<>();
     private final SortedSet<String> labelsRemoved = new TreeSet<>();
     private final SortedSet<String> labels;
@@ -430,32 +432,38 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         if (direction == Direction.OUT) {
             // check we have all edges in memory
             if (!outEdgesLoaded) {
-                // create string builder
-                StringBuilder builder = new StringBuilder();
-                // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
-                // edge ids already in memory
-                List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
-                // process where clause
-                processEdgesWhereClause("m", identifiers, "r", builder, parameters);
-                // return
-                builder.append(" RETURN n, r, m");
-                // create statement
-                Statement statement = new Statement(builder.toString(), parameters);
-                // execute statement
-                StatementResult result = session.executeStatement(statement);
-                // execute command
-                Stream<Edge> query = session.edges(result);
-                // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
-                Iterator<Edge> iterator = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(edge -> (Edge)edge), query)
-                    .collect(Collectors.toList())
-                    .iterator();
-                // process summary (query has been already consumed by combine)
-                ResultSummaryLogger.log(result.consume());
-                // after this line it is safe to update loaded flag
-                outEdgesLoaded = labels.length == 0;
-                // return iterator
-                return iterator;
+                // labels we need to query for
+                Set<String> relationshipLabels = set.stream().filter(item -> !outEdgeLabels.contains(item)).collect(Collectors.toSet());
+                // check query is required for labels
+                if (set.isEmpty() || !relationshipLabels.isEmpty()) {
+                    // create string builder
+                    StringBuilder builder = new StringBuilder();
+                    // match clause
+                    builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    // edge ids already in memory
+                    List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
+                    // process where clause
+                    processEdgesWhereClause("m", identifiers, "r", builder, parameters);
+                    // return
+                    builder.append(" RETURN n, r, m");
+                    // create statement
+                    Statement statement = new Statement(builder.toString(), parameters);
+                    // execute statement
+                    StatementResult result = session.executeStatement(statement);
+                    // execute command
+                    Stream<Edge> query = session.edges(result);
+                    // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
+                    Iterator<Edge> iterator = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(edge -> (Edge)edge), query)
+                        .collect(Collectors.toList())
+                        .iterator();
+                    // process summary (query has been already consumed by combine)
+                    ResultSummaryLogger.log(result.consume());
+                    // after this line it is safe to update loaded flag and labels in memory
+                    outEdgesLoaded = labels.length == 0;
+                    outEdgeLabels.addAll(set);
+                    // return iterator
+                    return iterator;
+                }
             }
             // edges in memory (return copy since edges can be deleted in the middle of the loop)
             return outEdges.stream().filter(edge -> labels.length == 0 || set.contains(edge.label()))
@@ -467,12 +475,55 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         if (direction == Direction.IN) {
             // check we have all edges in memory
             if (!inEdgesLoaded) {
+                // labels we need to query for
+                Set<String> relationshipLabels = set.stream().filter(item -> !inEdgeLabels.contains(item)).collect(Collectors.toSet());
+                // check query is required for labels
+                if (set.isEmpty() || !relationshipLabels.isEmpty()) {
+                    // create string builder
+                    StringBuilder builder = new StringBuilder();
+                    // match clause
+                    builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    // edge ids already in memory
+                    List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
+                    // process where clause
+                    processEdgesWhereClause("m", identifiers, "r", builder, parameters);
+                    // return
+                    builder.append(" RETURN n, r, m");
+                    // create statement
+                    Statement statement = new Statement(builder.toString(), parameters);
+                    // execute statement
+                    StatementResult result = session.executeStatement(statement);
+                    // execute command
+                    Stream<Edge> query = session.edges(result);
+                    // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
+                    Iterator<Edge> iterator = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
+                        .collect(Collectors.toList())
+                        .iterator();
+                    // process summary (query has been already consumed by combine)
+                    ResultSummaryLogger.log(result.consume());
+                    // after this line it is safe to update loaded flag and labels in memory
+                    inEdgesLoaded = labels.length == 0;
+                    inEdgeLabels.addAll(set);
+                    // return iterator
+                    return iterator;
+                }
+            }
+            // edges in memory (return copy since edges can be deleted in the middle of the loop)
+            return inEdges.stream().filter(edge -> labels.length == 0 || set.contains(edge.label()))
+                .map(edge -> (Edge)edge)
+                .collect(Collectors.toList())
+                .iterator();
+        }
+        // check we have all edges in memory
+        if (!outEdgesLoaded || !inEdgesLoaded) {
+            // check we have labels already in memory
+            if (set.isEmpty() || !outEdgeLabels.containsAll(set) || !inEdgeLabels.containsAll(set)) {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
                 // edge ids already in memory
-                List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
+                List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
                 processEdgesWhereClause("m", identifiers, "r", builder, parameters);
                 // return
@@ -484,51 +535,20 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // execute command
                 Stream<Edge> query = session.edges(result);
                 // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
-                Iterator<Edge> iterator = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
+                Iterator<Edge> iterator = Stream.concat(Stream.concat(labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream(), labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
                     .collect(Collectors.toList())
                     .iterator();
                 // process summary (query has been already consumed by combine)
                 ResultSummaryLogger.log(result.consume());
-                // after this line it is safe to update loaded flag
-                inEdgesLoaded = labels.length == 0;
+                // after this line it is safe to update loaded flags
+                outEdgesLoaded = outEdgesLoaded || labels.length == 0;
+                inEdgesLoaded = inEdgesLoaded || labels.length == 0;
+                // update labels in memory
+                outEdgeLabels.addAll(set);
+                inEdgeLabels.addAll(set);
                 // return iterator
                 return iterator;
             }
-            // edges in memory (return copy since edges can be deleted in the middle of the loop)
-            return inEdges.stream().filter(edge -> labels.length == 0 || set.contains(edge.label()))
-                .map(edge -> (Edge)edge)
-                .collect(Collectors.toList())
-                .iterator();
-        }
-        // check we have all edges in memory
-        if (!outEdgesLoaded || !inEdgesLoaded) {
-            // create string builder
-            StringBuilder builder = new StringBuilder();
-            // match clause
-            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
-            // edge ids already in memory
-            List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
-            // process where clause
-            processEdgesWhereClause("m", identifiers, "r", builder, parameters);
-            // return
-            builder.append(" RETURN n, r, m");
-            // create statement
-            Statement statement = new Statement(builder.toString(), parameters);
-            // execute statement
-            StatementResult result = session.executeStatement(statement);
-            // execute command
-            Stream<Edge> query = session.edges(result);
-            // edges in memory plus the ones in database (return copy since edges can be deleted in the middle of the loop)
-            Iterator<Edge> iterator = Stream.concat(Stream.concat(labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream(), labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(edge -> (Edge)edge), query)
-                .collect(Collectors.toList())
-                .iterator();
-            // process summary (query has been already consumed by combine)
-            ResultSummaryLogger.log(result.consume());
-            // after this line it is safe to update loaded flags
-            outEdgesLoaded = outEdgesLoaded || labels.length == 0;
-            inEdgesLoaded = inEdgesLoaded || labels.length == 0;
-            // return iterator
-            return iterator;
         }
         // edges in memory (return copy since edges can be deleted in the middle of the loop)
         return Stream.concat(labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream(), labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream())
@@ -556,30 +576,35 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         if (direction == Direction.OUT) {
             // check we have all edges in memory
             if (!outEdgesLoaded) {
-                // create string builder
-                StringBuilder builder = new StringBuilder();
-                // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
-                // edge ids already in memory
-                List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
-                // process where clause
-                processEdgesWhereClause("m", identifiers, "r", builder, parameters);
-                // return
-                builder.append(" RETURN m");
-                // create statement
-                Statement statement = new Statement(builder.toString(), parameters);
-                // execute statement
-                StatementResult result = session.executeStatement(statement);
-                // execute command
-                Stream<Vertex> query = session.vertices(result);
-                // return copy since elements can be deleted in the middle of the loop
-                Iterator<Vertex> iterator = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), query)
-                    .collect(Collectors.toList())
-                    .iterator();
-                // process summary (query has been already consumed by collector)
-                ResultSummaryLogger.log(result.consume());
-                // return iterator
-                return iterator;
+                // labels we need to query for
+                Set<String> relationshipLabels = set.stream().filter(item -> !outEdgeLabels.contains(item)).collect(Collectors.toSet());
+                // check query is required for labels
+                if (set.isEmpty() || !relationshipLabels.isEmpty()) {
+                    // create string builder
+                    StringBuilder builder = new StringBuilder();
+                    // match clause
+                    builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    // edge ids already in memory
+                    List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
+                    // process where clause
+                    processEdgesWhereClause("m", identifiers, "r", builder, parameters);
+                    // return
+                    builder.append(" RETURN m");
+                    // create statement
+                    Statement statement = new Statement(builder.toString(), parameters);
+                    // execute statement
+                    StatementResult result = session.executeStatement(statement);
+                    // execute command
+                    Stream<Vertex> query = session.vertices(result);
+                    // return copy since elements can be deleted in the middle of the loop
+                    Iterator<Vertex> iterator = Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), query)
+                        .collect(Collectors.toList())
+                        .iterator();
+                    // process summary (query has been already consumed by collector)
+                    ResultSummaryLogger.log(result.consume());
+                    // return iterator
+                    return iterator;
+                }
             }
             // edges in memory (return copy since elements can be deleted in the middle of the loop)
             return (labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex)
@@ -590,12 +615,51 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         if (direction == Direction.IN) {
             // check we have all edges in memory
             if (!inEdgesLoaded) {
+                // labels we need to query for
+                Set<String> relationshipLabels = set.stream().filter(item -> !inEdgeLabels.contains(item)).collect(Collectors.toSet());
+                // check query is required for labels
+                if (set.isEmpty() || !relationshipLabels.isEmpty()) {
+                    // create string builder
+                    StringBuilder builder = new StringBuilder();
+                    // match clause
+                    builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    // edge ids already in memory
+                    List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
+                    // process where clause
+                    processEdgesWhereClause("m", identifiers, "r", builder, parameters);
+                    // return
+                    builder.append(" RETURN m");
+                    // create statement
+                    Statement statement = new Statement(builder.toString(), parameters);
+                    // execute statement
+                    StatementResult result = session.executeStatement(statement);
+                    // execute command
+                    Stream<Vertex> query = session.vertices(result);
+                    // return copy since elements can be deleted in the middle of the loop
+                    Iterator<Vertex> iterator = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex), query)
+                        .collect(Collectors.toList())
+                        .iterator();
+                    // process summary (query has been already consumed by collector)
+                    ResultSummaryLogger.log(result.consume());
+                    // return iterator
+                    return iterator;
+                }
+            }
+            // edges in memory (return copy since elements can be deleted in the middle of the loop
+            return (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)
+                .collect(Collectors.toList())
+                .iterator();
+        }
+        // check we have all edges in memory
+        if (!outEdgesLoaded || !inEdgesLoaded) {
+            // check we have labels already in memory
+            if (set.isEmpty() || !outEdgeLabels.containsAll(set) || !inEdgeLabels.containsAll(set)) {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
                 // edge ids already in memory
-                List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
+                List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
                 processEdgesWhereClause("m", identifiers, "r", builder, parameters);
                 // return
@@ -607,7 +671,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // execute command
                 Stream<Vertex> query = session.vertices(result);
                 // return copy since elements can be deleted in the middle of the loop
-                Iterator<Vertex> iterator = Stream.concat((labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex), query)
+                Iterator<Vertex> iterator = Stream.concat(Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)), query)
                     .collect(Collectors.toList())
                     .iterator();
                 // process summary (query has been already consumed by collector)
@@ -615,37 +679,6 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // return iterator
                 return iterator;
             }
-            // edges in memory (return copy since elements can be deleted in the middle of the loop
-            return (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)
-                .collect(Collectors.toList())
-                .iterator();
-        }
-        // check we have all edges in memory
-        if (!outEdgesLoaded || !inEdgesLoaded) {
-            // create string builder
-            StringBuilder builder = new StringBuilder();
-            // match clause
-            builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
-            // edge ids already in memory
-            List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
-            // process where clause
-            processEdgesWhereClause("m", identifiers, "r", builder, parameters);
-            // return
-            builder.append(" RETURN m");
-            // create statement
-            Statement statement = new Statement(builder.toString(), parameters);
-            // execute statement
-            StatementResult result = session.executeStatement(statement);
-            // execute command
-            Stream<Vertex> query = session.vertices(result);
-            // return copy since elements can be deleted in the middle of the loop
-            Iterator<Vertex> iterator = Stream.concat(Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex)), query)
-                .collect(Collectors.toList())
-                .iterator();
-            // process summary (query has been already consumed by collector)
-            ResultSummaryLogger.log(result.consume());
-            // return iterator
-            return iterator;
         }
         // edges in memory (return copy since edges can be deleted in the middle of the loop)
         return Stream.concat((labels.length != 0 ? outEdges.stream().filter(edge -> set.contains(edge.label())) : outEdges.stream()).map(Edge::inVertex), (labels.length != 0 ? inEdges.stream().filter(edge -> set.contains(edge.label())) : inEdges.stream()).map(Edge::outVertex))
