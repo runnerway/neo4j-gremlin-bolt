@@ -18,24 +18,34 @@
 
 package com.steelbridgelabs.oss.neo4j.structure;
 
+import org.neo4j.driver.v1.types.Entity;
+
 /**
  * @author Rogelio J. Baucells
  */
 public interface Neo4JElementIdProvider<T> {
 
     /**
-     * Gets the field name used for identifiers in {@link Neo4JElement}.
-     *
-     * @return the field name used for identifiers.
-     */
-    String idFieldName();
-
-    /**
      * Generates a new identifier value for a {@link Neo4JElement}.
      *
-     * @return the new identifier value.
+     * @return the new identifier value or <code>null</code> if provider does not support identifier generation.
      */
-    T generateId();
+    T generate();
+
+    /**
+     * Gets the field name used for {@link Entity} identifier.
+     *
+     * @return The field name used for {@link Entity} identifier or <code>null</code> if not using field for identifier.
+     */
+    String fieldName();
+
+    /**
+     * Gets the identifier value from a neo4j {@link Entity}.
+     *
+     * @param entity The neo4j {@link Entity}.
+     * @return The neo4j {@link Entity} identifier.
+     */
+    T get(Entity entity);
 
     /**
      * Process the given identifier converting it to the correct type if necessary.
@@ -44,4 +54,12 @@ public interface Neo4JElementIdProvider<T> {
      * @return The {@link Neo4JElement} identifier converted to the correct type if necessary.
      */
     T processIdentifier(Object id);
+
+    /**
+     * Gets the MATCH WHERE predicate operand.
+     *
+     * @param alias The neo4j {@link Entity} alias in a MATCH statement.
+     * @return The MATCH WHERE predicate operand.
+     */
+    String matchPredicateOperand(String alias);
 }

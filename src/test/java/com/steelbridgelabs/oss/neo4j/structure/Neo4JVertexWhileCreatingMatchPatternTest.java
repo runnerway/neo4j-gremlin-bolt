@@ -76,14 +76,14 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         // act
-        String result = vertex.matchPattern(null, "p1");
+        String result = vertex.matchPattern(null);
         // assert
         Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(:`l1`{id: {p1}})");
+        Assert.assertEquals("Invalid match pattern", result, "(:`l1`)");
     }
 
     @Test
@@ -99,14 +99,14 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         // act
-        String result = vertex.matchPattern("a", "p1");
+        String result = vertex.matchPattern("a");
         // assert
         Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(a:`l1`{id: {p1}})");
+        Assert.assertEquals("Invalid match pattern", result, "(a:`l1`)");
     }
 
     @Test
@@ -122,14 +122,14 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Arrays.asList("l1", "l2"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         // act
-        String result = vertex.matchPattern("a", "p1");
+        String result = vertex.matchPattern("a");
         // assert
         Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(a:`l1`:`l2`{id: {p1}})");
+        Assert.assertEquals("Invalid match pattern", result, "(a:`l1`:`l2`)");
     }
 
     @Test
@@ -145,14 +145,14 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.addLabel("new");
         // act
-        String result = vertex.matchPattern(null, "p1");
+        String result = vertex.matchPattern(null);
         // assert
         Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(:`l1`{id: {p1}})");
+        Assert.assertEquals("Invalid match pattern", result, "(:`l1`)");
     }
 }

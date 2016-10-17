@@ -20,6 +20,7 @@
 package com.steelbridgelabs.oss.neo4j;
 
 import com.steelbridgelabs.oss.neo4j.structure.Neo4JElementIdProvider;
+import org.neo4j.driver.v1.types.Entity;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,12 +35,12 @@ public class ElementIdProvider implements Neo4JElementIdProvider<Long> {
     private final AtomicLong atomicLong = new AtomicLong();
 
     @Override
-    public String idFieldName() {
+    public String fieldName() {
         return IdFieldName;
     }
 
     @Override
-    public Long generateId() {
+    public Long generate() {
         return atomicLong.incrementAndGet();
     }
 
@@ -57,5 +58,15 @@ public class ElementIdProvider implements Neo4JElementIdProvider<Long> {
             return Long.valueOf((String)id);
         // error, TODO get message from resource file
         throw new IllegalArgumentException(String.format("Expected an id that is convertible to Long but received %s", id.getClass()));
+    }
+
+    @Override
+    public Long get(Entity entity) {
+        return null;
+    }
+
+    @Override
+    public String matchPredicateOperand(String alias) {
+        return alias + "." + IdFieldName;
     }
 }

@@ -75,8 +75,6 @@ class Neo4JSession implements AutoCloseable {
     private final Set<Neo4JEdge> edgeUpdateQueue = new HashSet<>();
     private final Set<Neo4JVertex> vertexDeleteQueue = new HashSet<>();
     private final Set<Neo4JEdge> edgeDeleteQueue = new HashSet<>();
-    private final String vertexIdFieldName;
-    private final String edgeIdFieldName;
 
     private org.neo4j.driver.v1.Transaction transaction;
     private boolean verticesLoaded = false;
@@ -97,9 +95,6 @@ class Neo4JSession implements AutoCloseable {
         this.session = session;
         this.vertexIdProvider = vertexIdProvider;
         this.edgeIdProvider = edgeIdProvider;
-        // initialize field ids names
-        vertexIdFieldName = vertexIdProvider.idFieldName();
-        edgeIdFieldName = edgeIdProvider.idFieldName();
     }
 
     public org.neo4j.driver.v1.Transaction beginTransaction() {
@@ -117,6 +112,14 @@ class Neo4JSession implements AutoCloseable {
 
     public boolean isTransactionOpen() {
         return transaction != null && transaction.isOpen();
+    }
+
+    Neo4JElementIdProvider<?> getVertexIdProvider() {
+        return vertexIdProvider;
+    }
+
+    Neo4JElementIdProvider<?> getEdgeIdProvider() {
+        return edgeIdProvider;
     }
 
     public void commit() {
@@ -232,7 +235,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create vertex
-        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, vertexIdProvider.generateId(), Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
+        Neo4JVertex vertex = new Neo4JVertex(graph, this, Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
         // add vertex to transient set (before processing properties to avoid having a transient vertex in update queue)
         transientVertices.add(vertex);
         // attach properties
@@ -256,7 +259,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create edge
-        Neo4JEdge edge = new Neo4JEdge(graph, this, edgeIdProvider, edgeIdProvider.generateId(), label, out, in);
+        Neo4JEdge edge = new Neo4JEdge(graph, this, label, out, in);
         // register transient edge (before processing properties to avoid having a transient edge in update queue)
         transientEdges.add(edge);
         // attach properties
@@ -306,7 +309,7 @@ class Neo4JSession implements AutoCloseable {
                     // vertex match predicate
                     String predicate = partition.vertexMatchPredicate("n");
                     // cypher statement
-                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE n." + vertexIdFieldName + " in {ids}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("ids", filter));
+                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE " + vertexIdProvider.matchPredicateOperand("n") + " IN {ids}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("ids", filter));
                     // execute statement
                     StatementResult result = executeStatement(statement);
                     // create stream from query
@@ -382,7 +385,7 @@ class Neo4JSession implements AutoCloseable {
                     String outVertexPredicate = partition.vertexMatchPredicate("n");
                     String inVertexPredicate = partition.vertexMatchPredicate("m");
                     // cypher statement
-                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE r." + edgeIdFieldName + " in {ids}" + (outVertexPredicate != null && inVertexPredicate != null ? " AND " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m", Values.parameters("ids", filter));
+                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " in {ids}" + (outVertexPredicate != null && inVertexPredicate != null ? " AND " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m", Values.parameters("ids", filter));
                     // execute statement
                     StatementResult result = executeStatement(statement);
                     // find edges
@@ -525,7 +528,7 @@ class Neo4JSession implements AutoCloseable {
         // node
         Node node = record.get(0).asNode();
         // vertex id
-        Object vertexId = node.get(vertexIdFieldName).asObject();
+        Object vertexId = vertexIdProvider.get(node);
         // check vertex has been deleted
         if (!deletedVertices.contains(vertexId)) {
             // check this vertex has been already loaded into this session
@@ -534,7 +537,7 @@ class Neo4JSession implements AutoCloseable {
                 // check node belongs to partition
                 if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
                     // create and register vertex
-                    return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, node));
+                    return registerVertex(new Neo4JVertex(graph, this, node));
                 }
                 // skip vertex (not in partition)
                 return null;
@@ -550,7 +553,7 @@ class Neo4JSession implements AutoCloseable {
         // relationship
         Relationship relationship = record.get(1).asRelationship();
         // edge id
-        Object edgeId = relationship.get(edgeIdFieldName).asObject();
+        Object edgeId = edgeIdProvider.get(relationship);
         // check edge has been deleted
         if (!deletedEdges.contains(edgeId)) {
             // check we have record in memory
@@ -560,8 +563,8 @@ class Neo4JSession implements AutoCloseable {
                 Node firstNode = record.get(0).asNode();
                 Node secondNode = record.get(2).asNode();
                 // node ids
-                Object firstNodeId = firstNode.get(vertexIdFieldName).asObject();
-                Object secondNodeId = secondNode.get(vertexIdFieldName).asObject();
+                Object firstNodeId = vertexIdProvider.get(firstNode);
+                Object secondNodeId = vertexIdProvider.get(secondNode);
                 // check edge has been deleted (one of the vertices was deleted) or the vertices are not in the read partition
                 if (deletedVertices.contains(firstNodeId) || deletedVertices.contains(secondNodeId) || !partition.containsVertex(StreamSupport.stream(firstNode.labels().spliterator(), false).collect(Collectors.toSet())) || !partition.containsVertex(StreamSupport.stream(secondNode.labels().spliterator(), false).collect(Collectors.toSet())))
                     return null;
@@ -569,7 +572,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex firstVertex = vertices.get(firstNodeId);
                 if (firstVertex == null) {
                     // create vertex
-                    firstVertex = new Neo4JVertex(graph, this, vertexIdProvider, firstNode);
+                    firstVertex = new Neo4JVertex(graph, this, firstNode);
                     // register it
                     registerVertex(firstVertex);
                 }
@@ -577,7 +580,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex secondVertex = vertices.get(secondNodeId);
                 if (secondVertex == null) {
                     // create vertex
-                    secondVertex = new Neo4JVertex(graph, this, vertexIdProvider, secondNode);
+                    secondVertex = new Neo4JVertex(graph, this, secondNode);
                     // register it
                     registerVertex(secondVertex);
                 }
@@ -585,7 +588,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex out = relationship.startNodeId() == firstNode.id() ? firstVertex : secondVertex;
                 Neo4JVertex in = relationship.endNodeId() == firstNode.id() ? firstVertex : secondVertex;
                 // create edge
-                edge = new Neo4JEdge(graph, this, edgeIdProvider, out, relationship, in);
+                edge = new Neo4JEdge(graph, this, out, relationship, in);
                 // register with adjacent vertices
                 out.addOutEdge(edge);
                 in.addInEdge(edge);

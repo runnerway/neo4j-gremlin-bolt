@@ -75,9 +75,9 @@ public class Neo4JVertexWhileRollbackTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.property("key1", "value2");
         // act
         vertex.rollback();
@@ -99,9 +99,9 @@ public class Neo4JVertexWhileRollbackTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.property("key1", "value2");
         // act
         vertex.rollback();

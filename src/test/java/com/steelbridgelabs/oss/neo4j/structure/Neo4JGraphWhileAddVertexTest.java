@@ -58,8 +58,8 @@ public class Neo4JGraphWhileAddVertexTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
@@ -77,8 +77,8 @@ public class Neo4JGraphWhileAddVertexTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act

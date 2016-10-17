@@ -76,9 +76,9 @@ public class Neo4JVertexWhileGettingPropertiesTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.property(VertexProperty.Cardinality.single, "test", 1L);
         // act
         Iterator<VertexProperty<Long>> result = vertex.properties("test");
@@ -104,9 +104,9 @@ public class Neo4JVertexWhileGettingPropertiesTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.property(VertexProperty.Cardinality.single, "p1", 1L);
         // act
         Iterator<VertexProperty<Long>> result = vertex.properties("test");
@@ -127,9 +127,9 @@ public class Neo4JVertexWhileGettingPropertiesTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         // act
         Iterator<VertexProperty<Long>> result = vertex.properties("test");
         // assert
@@ -149,9 +149,9 @@ public class Neo4JVertexWhileGettingPropertiesTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.property(VertexProperty.Cardinality.single, "p1", 1L);
         vertex.property(VertexProperty.Cardinality.single, "p2", 2L);
         // act
@@ -177,9 +177,9 @@ public class Neo4JVertexWhileGettingPropertiesTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
         vertex.property(VertexProperty.Cardinality.single, "p1", 1L);
         vertex.property(VertexProperty.Cardinality.single, "p2", 2L);
         // act

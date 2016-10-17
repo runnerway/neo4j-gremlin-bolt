@@ -108,7 +108,6 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private final Neo4JGraph graph;
     private final Neo4JSession session;
     private final Map<String, Neo4JEdgeProperty> properties = new HashMap<>();
-    private final String idFieldName;
     private final Object id;
     private final String label;
     private final Neo4JVertex out;
@@ -118,11 +117,9 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private boolean newEdge;
     private Map<String, Neo4JEdgeProperty> originalProperties;
 
-    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider provider, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
+    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, String label, Neo4JVertex out, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(provider, "provider cannot be null");
-        Objects.requireNonNull(id, "id cannot be null");
         Objects.requireNonNull(label, "label cannot be null");
         Objects.requireNonNull(properties, "properties cannot be null");
         Objects.requireNonNull(out, "out cannot be null");
@@ -130,8 +127,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // store fields
         this.graph = graph;
         this.session = session;
-        this.idFieldName = provider.idFieldName();
-        this.id = provider.processIdentifier(id);
+        this.id = session.getEdgeIdProvider().generate();
         this.label = label;
         this.out = out;
         this.in = in;
@@ -141,22 +137,24 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         newEdge = true;
     }
 
-    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider provider, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
+    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(provider, "provider cannot be null");
         Objects.requireNonNull(out, "out cannot be null");
         Objects.requireNonNull(relationship, "relationship cannot be null");
         Objects.requireNonNull(in, "in cannot be null");
         // store fields
         this.graph = graph;
         this.session = session;
-        this.idFieldName = provider.idFieldName();
+        // vertex id provider
+        Neo4JElementIdProvider<?> provider = session.getEdgeIdProvider();
         // from relationship
-        this.id = provider.processIdentifier(relationship.get(idFieldName).asObject());
+        this.id = provider.get(relationship);
         this.label = relationship.type();
+        // id field name (if any)
+        String idFieldName = provider.fieldName();
         // copy properties from relationship, remove idFieldName from map
-        StreamSupport.stream(relationship.keys().spliterator(), false).filter(key -> idFieldName.compareTo(key) != 0).forEach(key -> {
+        StreamSupport.stream(relationship.keys().spliterator(), false).filter(key -> !key.equals(idFieldName)).forEach(key -> {
             // value
             Value value = relationship.get(key);
             // add property value
@@ -304,8 +302,10 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private Map<String, Object> statementParameters() {
         // process properties
         Map<String, Object> parameters = properties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value()));
-        // append id
-        parameters.put(idFieldName, id);
+        // append id field if required
+        String idFieldName = session.getEdgeIdProvider().fieldName();
+        if (idFieldName != null)
+            parameters.put(idFieldName, id);
         // return parameters
         return parameters;
     }
@@ -313,7 +313,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement insertStatement() {
         // create statement
-        String statement = "MATCH " + out.matchPattern("o", "oid") + ", " + in.matchPattern("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i)";
+        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i)";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "ep", statementParameters());
         // reset flags
@@ -325,7 +325,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement updateStatement() {
         // update statement
-        String statement = "MATCH " + out.matchPattern("o", "oid") + ", " + in.matchPattern("i", "iid") + " MERGE (o)-[r:`" + label + "`{" + idFieldName + ": {id}}]->(i) ON MATCH SET r = {rp}";
+        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + session.getEdgeIdProvider().matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
         // reset flags
@@ -337,7 +337,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Statement deleteStatement() {
         // delete statement
-        String statement = "MATCH " + out.matchPattern("o", "oid") + "-[r:`" + label + "`{" + idFieldName + ": {id}}]->" + in.matchPattern("i", "iid") + " DELETE r";
+        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MATCH (o)-[r:`" + label + "`]->(i)" + " WHERE " + session.getEdgeIdProvider().matchPredicateOperand("r") + " = {id} DELETE r";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id);
         // command statement

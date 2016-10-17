@@ -39,7 +39,7 @@ public class DatabaseSequenceElementIdProviderWhileGettingIdFieldNameTest {
         // arrange
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver);
         // act
-        String fieldName = provider.idFieldName();
+        String fieldName = provider.fieldName();
         // assert
         Assert.assertNotNull("Invalid identifier field name", fieldName);
         Assert.assertTrue("Provider returned an invalid identifier field name", DatabaseSequenceElementIdProvider.DefaultIdFieldName.compareTo(fieldName) == 0);
@@ -50,7 +50,7 @@ public class DatabaseSequenceElementIdProviderWhileGettingIdFieldNameTest {
         // arrange
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 1000, "field1", "label");
         // act
-        String fieldName = provider.idFieldName();
+        String fieldName = provider.fieldName();
         // assert
         Assert.assertNotNull("Invalid identifier field name", fieldName);
         Assert.assertTrue("Provider returned an invalid identifier field name", "field1".compareTo(fieldName) == 0);

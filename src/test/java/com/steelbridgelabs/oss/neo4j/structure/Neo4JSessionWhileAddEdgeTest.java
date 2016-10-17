@@ -60,8 +60,8 @@ public class Neo4JSessionWhileAddEdgeTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
@@ -79,8 +79,8 @@ public class Neo4JSessionWhileAddEdgeTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
         try (Neo4JSession session = new Neo4JSession(graph, Mockito.mock(Session.class), provider, provider)) {
@@ -98,8 +98,8 @@ public class Neo4JSessionWhileAddEdgeTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {

@@ -177,9 +177,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private final SortedSet<String> labelsRemoved = new TreeSet<>();
     private final SortedSet<String> labels;
     private final Set<String> additionalLabels;
-    private final String idFieldName;
-    private final Object id;
 
+    private Object id;
     private boolean outEdgesLoaded = false;
     private boolean inEdgesLoaded = false;
     private boolean dirty = false;
@@ -189,19 +188,16 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private Map<String, Collection<VertexProperty>> originalProperties;
     private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
-    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Object id, Collection<String> labels) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Collection<String> labels) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
-        Objects.requireNonNull(id, "id cannot be null");
         Objects.requireNonNull(labels, "labels cannot be null");
         // store fields
         this.graph = graph;
         this.partition = graph.getPartition();
         this.additionalLabels = graph.vertexLabels();
         this.session = session;
-        this.idFieldName = vertexIdProvider.idFieldName();
-        this.id = vertexIdProvider.processIdentifier(id);
+        this.id = session.getVertexIdProvider().generate();
         this.labels = new TreeSet<>(labels);
         // this is the original set of labels
         this.originalLabels = Collections.emptySortedSet();
@@ -217,19 +213,19 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         inEdgesLoaded = true;
     }
 
-    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider vertexIdProvider, Node node) {
+    Neo4JVertex(Neo4JGraph graph, Neo4JSession session, Node node) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(vertexIdProvider, "idFieldName cannot be null");
         Objects.requireNonNull(node, "node cannot be null");
         // store fields
         this.graph = graph;
         this.partition = graph.getPartition();
         this.additionalLabels = graph.vertexLabels();
         this.session = session;
-        this.idFieldName = vertexIdProvider.idFieldName();
+        // vertex id provider
+        Neo4JElementIdProvider<?> provider = session.getVertexIdProvider();
         // from node
-        this.id = vertexIdProvider.processIdentifier(node.get(idFieldName).asObject());
+        this.id = provider.get(node);
         // graph labels (additional & partition labels in original node)
         this.graphLabels = StreamSupport.stream(node.labels().spliterator(), false).filter(label -> additionalLabels.contains(label) && !partition.validateLabel(label)).collect(Collectors.toSet());
         // labels, do not store additional && partition labels
@@ -238,8 +234,10 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         this.originalLabels = new TreeSet<>(this.labels);
         // labels used to match the vertex in the database
         this.matchLabels = StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toCollection(TreeSet::new));
-        // copy properties from node, remove idFieldName from map
-        StreamSupport.stream(node.keys().spliterator(), false).filter(key -> idFieldName.compareTo(key) != 0).forEach(key -> {
+        // id field name (if any)
+        String idFieldName = provider.fieldName();
+        // copy properties from node, exclude identifier
+        StreamSupport.stream(node.keys().spliterator(), false).filter(key -> !key.equals(idFieldName)).forEach(key -> {
             // value
             Value value = node.get(key);
             // process value type
@@ -329,36 +327,37 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     /**
      * Generates a Cypher MATCH pattern for the vertex, example:
      * <p>
-     * (alias:Label1:Label2{id: {idParameterName}})
+     * (alias:Label1:Label2)
      * </p>
      *
-     * @param alias           The node alias, <code>null</code> if not required.
-     * @param idParameterName The name of the parameter that contains the vertex id.
+     * @param alias The node alias, <code>null</code> if not required.
      * @return the Cypher MATCH clause.
      */
-    public String matchPattern(String alias, String idParameterName) {
-        Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
+    public String matchPattern(String alias) {
         // generate match pattern
         if (alias != null)
-            return "(" + alias + processLabels(matchLabels, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
+            return "(" + alias + processLabels(matchLabels, false) + ")";
         // pattern without alias
-        return "(" + processLabels(matchLabels, false) + "{" + idFieldName + ": {" + idParameterName + "}})";
+        return "(" + processLabels(matchLabels, false) + ")";
     }
 
     /**
      * Generates a Cypher MATCH predicate for the vertex, example:
      * <p>
-     * alias:Label1 OR alias:Label2
+     * alias.id = {id} AND (alias:Label1 OR alias:Label2)
      * </p>
-     * This is a shortcut operation for {@link Neo4JReadPartition#vertexMatchPredicate(String)}.
      *
-     * @param alias The node alias.
+     * @param alias           The node alias.
+     * @param idParameterName The name of the parameter that contains the vertex id.
      * @return the Cypher MATCH predicate or <code>null</code> if not required to MATCH the vertex.
      */
-    public String matchPredicate(String alias) {
+    public String matchPredicate(String alias, String idParameterName) {
         Objects.requireNonNull(alias, "alias cannot be null");
-        // user graph partition to generate predicate
-        return graph.getPartition().vertexMatchPredicate(alias);
+        Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
+        // get partition
+        Neo4JReadPartition partition = graph.getPartition();
+        // create match predicate
+        return session.getVertexIdProvider().matchPredicateOperand(alias) + " = {" + idParameterName + "}" + (partition.usesMatchPredicate() ? " AND (" + partition.vertexMatchPredicate(alias) + ")" : "");
     }
 
     @Override
@@ -398,7 +397,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // check identifiers are empty
         if (!identifiers.isEmpty()) {
             // filter edges
-            builder.append(" WHERE NOT ").append(alias).append(".").append(idFieldName).append(" IN {ids}");
+            builder.append(" AND NOT ").append(session.getEdgeIdProvider().matchPredicateOperand(alias)).append(" IN {ids}");
             // ids parameters
             parameters.put("ids", identifiers);
             // check we need to add in predicate
@@ -409,7 +408,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         }
         else if (predicate != null) {
             // append WHERE
-            builder.append(" WHERE ").append(predicate);
+            builder.append(" AND ").append(predicate);
         }
     }
 
@@ -439,7 +438,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // create string builder
                     StringBuilder builder = new StringBuilder();
                     // match clause
-                    builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    builder.append("MATCH ").append(matchPattern("n")).append("-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")").append(" WHERE ").append(session.getVertexIdProvider().matchPredicateOperand("n")).append(" = {id}");
                     // edge ids already in memory
                     List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                     // process where clause
@@ -482,7 +481,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // create string builder
                     StringBuilder builder = new StringBuilder();
                     // match clause
-                    builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    builder.append("MATCH ").append(matchPattern("n")).append("<-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")").append(" WHERE ").append(session.getVertexIdProvider().matchPredicateOperand("n")).append(" = {id}");
                     // edge ids already in memory
                     List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                     // process where clause
@@ -521,7 +520,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                builder.append("MATCH ").append(matchPattern("n")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")").append(" WHERE ").append(session.getVertexIdProvider().matchPredicateOperand("n")).append(" = {id}");
                 // edge ids already in memory
                 List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -583,7 +582,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // create string builder
                     StringBuilder builder = new StringBuilder();
                     // match clause
-                    builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    builder.append("MATCH ").append(matchPattern("n")).append("-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]->(m").append(processLabels(Collections.emptySet(), true)).append(")").append(" WHERE ").append(session.getVertexIdProvider().matchPredicateOperand("n")).append(" = {id}");
                     // edge ids already in memory
                     List<Object> identifiers = outEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                     // process where clause
@@ -622,7 +621,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     // create string builder
                     StringBuilder builder = new StringBuilder();
                     // match clause
-                    builder.append("MATCH ").append(matchPattern("n", "id")).append("<-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                    builder.append("MATCH ").append(matchPattern("n")).append("<-[r").append(relationshipLabels.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")").append(" WHERE ").append(session.getVertexIdProvider().matchPredicateOperand("n")).append(" = {id}");
+                    ;
                     // edge ids already in memory
                     List<Object> identifiers = inEdges.stream().map(Neo4JEdge::id).collect(Collectors.toList());
                     // process where clause
@@ -657,7 +657,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 // create string builder
                 StringBuilder builder = new StringBuilder();
                 // match clause
-                builder.append("MATCH ").append(matchPattern("n", "id")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")");
+                builder.append("MATCH ").append(matchPattern("n")).append("-[r").append(set.stream().map(label -> ":`" + label + "`").collect(Collectors.joining("|"))).append("]-(m").append(processLabels(Collections.emptySet(), true)).append(")").append(" WHERE ").append(session.getVertexIdProvider().matchPredicateOperand("n")).append(" = {id}");
                 // edge ids already in memory
                 List<Object> identifiers = Stream.concat(outEdges.stream(), inEdges.stream()).map(Neo4JEdge::id).collect(Collectors.toList());
                 // process where clause
@@ -891,8 +891,10 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         );
         // process properties
         Map<String, Object> parameters = properties.entrySet().stream().collect(collector);
-        // append id
-        parameters.put(idFieldName, id);
+        // append id field if required
+        String idFieldName = session.getVertexIdProvider().fieldName();
+        if (idFieldName != null)
+            parameters.put(idFieldName, id);
         // return parameters
         return parameters;
     }
@@ -924,7 +926,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // parameters
             Map<String, Object> parameters = new HashMap<>();
             // merge statement
-            builder.append("MERGE ").append(matchPattern("v", "id"));
+            builder.append("MERGE ").append(matchPattern("v")).append(" WHERE ").append(matchPredicate("v", "id"));
             // id parameter
             parameters.put("id", id);
             // check vertex is dirty
@@ -953,7 +955,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     @Override
     public Statement deleteStatement() {
         // create statement
-        String statement = "MATCH " + matchPattern("v", "id") + " DETACH DELETE v";
+        String statement = "MATCH " + matchPattern("v") + " WHERE " + matchPredicate("v", "id") + " DETACH DELETE v";
         // parameters
         Value parameters = Values.parameters("id", id);
         // command statement

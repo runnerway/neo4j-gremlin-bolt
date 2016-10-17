@@ -20,7 +20,6 @@ package com.steelbridgelabs.oss.neo4j.structure;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,14 +63,15 @@ public class Neo4JEdgeWhileAddingPropertyValueTest {
     public void givenPropertyValueShouldAddItToEdge() {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(session.getEdgeIdProvider()).thenAnswer(invocation -> provider);
         Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(relationship.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
         // act
         Property<?> result = edge.property("p1", 1L);
         // assert

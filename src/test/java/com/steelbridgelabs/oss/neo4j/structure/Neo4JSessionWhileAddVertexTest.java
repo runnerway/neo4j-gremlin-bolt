@@ -63,8 +63,8 @@ public class Neo4JSessionWhileAddVertexTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
@@ -80,8 +80,8 @@ public class Neo4JSessionWhileAddVertexTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.anyInt())).thenAnswer(invocation -> 1L);
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
@@ -97,8 +97,8 @@ public class Neo4JSessionWhileAddVertexTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
@@ -114,8 +114,8 @@ public class Neo4JSessionWhileAddVertexTest {
         // arrange
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
@@ -135,8 +135,8 @@ public class Neo4JSessionWhileAddVertexTest {
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
         Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
             // act
