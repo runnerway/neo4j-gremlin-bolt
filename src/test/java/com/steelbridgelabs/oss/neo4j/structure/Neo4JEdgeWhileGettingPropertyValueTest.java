@@ -70,7 +70,7 @@ public class Neo4JEdgeWhileGettingPropertyValueTest {
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("p1", 1L);
         // act
         Property<?> result = edge.property("p1");

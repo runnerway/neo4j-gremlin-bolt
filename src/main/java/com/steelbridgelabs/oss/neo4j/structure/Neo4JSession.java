@@ -64,7 +64,6 @@ class Neo4JSession implements AutoCloseable {
     private final Session session;
     private final Neo4JElementIdProvider<?> vertexIdProvider;
     private final Neo4JElementIdProvider<?> edgeIdProvider;
-
     private final Map<Object, Neo4JVertex> vertices = new HashMap<>();
     private final Map<Object, Neo4JEdge> edges = new HashMap<>();
     private final Set<Object> deletedVertices = new HashSet<>();
@@ -112,14 +111,6 @@ class Neo4JSession implements AutoCloseable {
 
     public boolean isTransactionOpen() {
         return transaction != null && transaction.isOpen();
-    }
-
-    Neo4JElementIdProvider<?> getVertexIdProvider() {
-        return vertexIdProvider;
-    }
-
-    Neo4JElementIdProvider<?> getEdgeIdProvider() {
-        return edgeIdProvider;
     }
 
     public void commit() {
@@ -235,7 +226,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create vertex
-        Neo4JVertex vertex = new Neo4JVertex(graph, this, Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
+        Neo4JVertex vertex = new Neo4JVertex(graph, this, vertexIdProvider, edgeIdProvider, Arrays.asList(ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL).split(Neo4JVertex.LabelDelimiter)));
         // add vertex to transient set (before processing properties to avoid having a transient vertex in update queue)
         transientVertices.add(vertex);
         // attach properties
@@ -259,7 +250,7 @@ class Neo4JSession implements AutoCloseable {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         // create edge
-        Neo4JEdge edge = new Neo4JEdge(graph, this, label, out, in);
+        Neo4JEdge edge = new Neo4JEdge(graph, this, edgeIdProvider, label, out, in);
         // register transient edge (before processing properties to avoid having a transient edge in update queue)
         transientEdges.add(edge);
         // attach properties
@@ -381,11 +372,8 @@ class Neo4JSession implements AutoCloseable {
                 List<Object> filter = identifiers.stream().filter(id -> !edges.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
-                    // vertex match predicates
-                    String outVertexPredicate = partition.vertexMatchPredicate("n");
-                    String inVertexPredicate = partition.vertexMatchPredicate("m");
                     // cypher statement
-                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " in {ids}" + (outVertexPredicate != null && inVertexPredicate != null ? " AND " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m", Values.parameters("ids", filter));
+                    Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " in {ids}" + (partition.usesMatchPredicate() ? " AND " + partition.vertexMatchPredicate("n") + " AND " + partition.vertexMatchPredicate("m") : "") + " RETURN n, r, m", Values.parameters("ids", filter));
                     // execute statement
                     StatementResult result = executeStatement(statement);
                     // find edges
@@ -400,11 +388,8 @@ class Neo4JSession implements AutoCloseable {
                 // no need to execute query, only items in memory
                 return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
             }
-            // vertex match predicates
-            String outVertexPredicate = partition.vertexMatchPredicate("n");
-            String inVertexPredicate = partition.vertexMatchPredicate("m");
             // cypher statement for all edges in database
-            Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + (outVertexPredicate != null && inVertexPredicate != null ? " WHERE " + outVertexPredicate + " AND " + inVertexPredicate : "") + " RETURN n, r, m");
+            Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + (partition.usesMatchPredicate() ? " WHERE " + partition.vertexMatchPredicate("n") + " AND " + partition.vertexMatchPredicate("m") : "") + " RETURN n, r, m");
             // execute statement
             StatementResult result = executeStatement(statement);
             // find edges
@@ -537,7 +522,7 @@ class Neo4JSession implements AutoCloseable {
                 // check node belongs to partition
                 if (partition.containsVertex(StreamSupport.stream(node.labels().spliterator(), false).collect(Collectors.toSet()))) {
                     // create and register vertex
-                    return registerVertex(new Neo4JVertex(graph, this, node));
+                    return registerVertex(new Neo4JVertex(graph, this, vertexIdProvider, edgeIdProvider, node));
                 }
                 // skip vertex (not in partition)
                 return null;
@@ -572,7 +557,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex firstVertex = vertices.get(firstNodeId);
                 if (firstVertex == null) {
                     // create vertex
-                    firstVertex = new Neo4JVertex(graph, this, firstNode);
+                    firstVertex = new Neo4JVertex(graph, this, vertexIdProvider, edgeIdProvider, firstNode);
                     // register it
                     registerVertex(firstVertex);
                 }
@@ -580,7 +565,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex secondVertex = vertices.get(secondNodeId);
                 if (secondVertex == null) {
                     // create vertex
-                    secondVertex = new Neo4JVertex(graph, this, secondNode);
+                    secondVertex = new Neo4JVertex(graph, this, vertexIdProvider, edgeIdProvider, secondNode);
                     // register it
                     registerVertex(secondVertex);
                 }
@@ -588,7 +573,7 @@ class Neo4JSession implements AutoCloseable {
                 Neo4JVertex out = relationship.startNodeId() == firstNode.id() ? firstVertex : secondVertex;
                 Neo4JVertex in = relationship.endNodeId() == firstNode.id() ? firstVertex : secondVertex;
                 // create edge
-                edge = new Neo4JEdge(graph, this, out, relationship, in);
+                edge = new Neo4JEdge(graph, this, edgeIdProvider, out, relationship, in);
                 // register with adjacent vertices
                 out.addOutEdge(edge);
                 in.addInEdge(edge);
@@ -687,13 +672,17 @@ class Neo4JSession implements AutoCloseable {
     private void createVertices() {
         // insert vertices
         for (Neo4JVertex vertex : transientVertices) {
-            // create statement
-            Statement statement = vertex.insertStatement();
+            // create command
+            Neo4JDatabaseCommand command = vertex.insertCommand();
+            // statement
+            Statement statement = command.getStatement();
             // log information
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
+            // process result
+            command.getCallback().accept(result);
             // process summary
             ResultSummaryLogger.log(result.consume());
         }
@@ -702,14 +691,18 @@ class Neo4JSession implements AutoCloseable {
     private void updateVertices() {
         // update vertices
         for (Neo4JVertex vertex : vertexUpdateQueue) {
-            // create statement
-            Statement statement = vertex.updateStatement();
-            if (statement != null) {
+            // create command
+            Neo4JDatabaseCommand command = vertex.updateCommand();
+            if (command != null) {
+                // statement
+                Statement statement = command.getStatement();
                 // log information
                 if (logger.isDebugEnabled())
                     logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
                 // execute statement
                 StatementResult result = executeStatement(statement);
+                // process result
+                command.getCallback().accept(result);
                 // process summary
                 ResultSummaryLogger.log(result.consume());
             }
@@ -719,13 +712,17 @@ class Neo4JSession implements AutoCloseable {
     private void deleteVertices() {
         // delete vertices
         for (Neo4JVertex vertex : vertexDeleteQueue) {
-            // create statement
-            Statement statement = vertex.deleteStatement();
+            // create command
+            Neo4JDatabaseCommand command = vertex.deleteCommand();
+            // statement
+            Statement statement = command.getStatement();
             // log information
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
+            // process result
+            command.getCallback().accept(result);
             // process summary
             ResultSummaryLogger.log(result.consume());
         }
@@ -734,13 +731,17 @@ class Neo4JSession implements AutoCloseable {
     private void createEdges() {
         // insert edges
         for (Neo4JEdge edge : transientEdges) {
-            // create statement
-            Statement statement = edge.insertStatement();
+            // create command
+            Neo4JDatabaseCommand command = edge.insertCommand();
+            // statement
+            Statement statement = command.getStatement();
             // log information
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
+            // process result
+            command.getCallback().accept(result);
             // process summary
             ResultSummaryLogger.log(result.consume());
         }
@@ -749,28 +750,38 @@ class Neo4JSession implements AutoCloseable {
     private void updateEdges() {
         // update edges
         for (Neo4JEdge edge : edgeUpdateQueue) {
-            // create statement
-            Statement statement = edge.updateStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
-            // execute statement
-            StatementResult result = executeStatement(statement);
-            // process summary
-            ResultSummaryLogger.log(result.consume());
+            // create command
+            Neo4JDatabaseCommand command = edge.insertCommand();
+            if (command != null) {
+                // statement
+                Statement statement = command.getStatement();
+                // log information
+                if (logger.isDebugEnabled())
+                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
+                // execute statement
+                StatementResult result = executeStatement(statement);
+                // process result
+                command.getCallback().accept(result);
+                // process summary
+                ResultSummaryLogger.log(result.consume());
+            }
         }
     }
 
     private void deleteEdges() {
         // delete edges
         for (Neo4JEdge edge : edgeDeleteQueue) {
-            // create statement
-            Statement statement = edge.deleteStatement();
+            // create command
+            Neo4JDatabaseCommand command = edge.deleteCommand();
+            // statement
+            Statement statement = command.getStatement();
             // log information
             if (logger.isDebugEnabled())
                 logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
+            // process result
+            command.getCallback().accept(result);
             // process summary
             ResultSummaryLogger.log(result.consume());
         }

@@ -72,7 +72,7 @@ public class Neo4JEdgeWhileGettingPropertiesTest {
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("p1", 1L);
         // act
         Iterator<Property<Long>> result = edge.properties("p1");
@@ -96,7 +96,7 @@ public class Neo4JEdgeWhileGettingPropertiesTest {
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("p1", 1L);
         edge.property("p2", 1L);
         // act
@@ -121,7 +121,7 @@ public class Neo4JEdgeWhileGettingPropertiesTest {
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("p1", 1L);
         edge.property("p2", 1L);
         // act

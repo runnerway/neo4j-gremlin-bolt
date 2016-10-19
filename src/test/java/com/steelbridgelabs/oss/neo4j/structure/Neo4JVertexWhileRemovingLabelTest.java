@@ -79,7 +79,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         boolean result = vertex.removeLabel("l1");
         // assert
@@ -103,7 +103,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         boolean result = vertex.removeLabel("l2");
         // assert
@@ -127,7 +127,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         vertex.removeLabel("label");
         // assert
@@ -150,7 +150,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         vertex.removeLabel("label1");
         // assert
@@ -172,7 +172,7 @@ public class Neo4JVertexWhileRemovingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         vertex.addLabel("l3");
         Assert.assertTrue(vertex.isDirty());
         // act

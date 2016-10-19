@@ -65,7 +65,6 @@ public class Neo4JVertexWhileAddingLabelTest {
     @Test
     public void givenLabelShouldAddItToVertex() {
         // arrange
-        Mockito.when(session.getVertexIdProvider()).thenAnswer(invocation -> provider);
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
@@ -78,7 +77,7 @@ public class Neo4JVertexWhileAddingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         boolean result = vertex.addLabel("A");
         // assert
@@ -90,7 +89,6 @@ public class Neo4JVertexWhileAddingLabelTest {
     @Test
     public void givenExistingLabelShouldNotModifyVertex() {
         // arrange
-        Mockito.when(session.getVertexIdProvider()).thenAnswer(invocation -> provider);
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
@@ -103,7 +101,7 @@ public class Neo4JVertexWhileAddingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         boolean result = vertex.addLabel("l1");
         // assert
@@ -115,7 +113,6 @@ public class Neo4JVertexWhileAddingLabelTest {
     @Test(expected = IllegalArgumentException.class)
     public void givenLabelInPartitionShouldThrowException() {
         // arrange
-        Mockito.when(session.getVertexIdProvider()).thenAnswer(invocation -> provider);
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(partition.validateLabel(Mockito.eq("label"))).thenAnswer(invocation -> false);
@@ -128,7 +125,7 @@ public class Neo4JVertexWhileAddingLabelTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         vertex.addLabel("label");
         // assert

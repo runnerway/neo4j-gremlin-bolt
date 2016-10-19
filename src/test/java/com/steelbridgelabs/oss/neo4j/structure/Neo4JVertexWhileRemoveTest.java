@@ -77,7 +77,7 @@ public class Neo4JVertexWhileRemoveTest {
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         Mockito.doNothing().when(session).removeVertex(Mockito.any());
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         vertex.remove();
         // assert

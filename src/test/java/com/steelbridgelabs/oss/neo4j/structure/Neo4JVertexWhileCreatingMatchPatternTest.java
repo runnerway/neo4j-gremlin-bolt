@@ -78,7 +78,8 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         String result = vertex.matchPattern(null);
         // assert
@@ -101,7 +102,8 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         String result = vertex.matchPattern("a");
         // assert
@@ -124,7 +126,8 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         String result = vertex.matchPattern("a");
         // assert
@@ -147,7 +150,8 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         vertex.addLabel("new");
         // act
         String result = vertex.matchPattern(null);

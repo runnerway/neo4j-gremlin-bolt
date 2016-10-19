@@ -70,7 +70,7 @@ public class Neo4JEdgeWhileRollbackTest {
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("key1", "value2");
         // act
         edge.rollback();
@@ -91,7 +91,7 @@ public class Neo4JEdgeWhileRollbackTest {
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
         Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
-        Neo4JEdge edge = new Neo4JEdge(graph, session, outVertex, relationship, inVertex);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, provider, outVertex, relationship, inVertex);
         edge.property("key1", "value2");
         // act
         edge.rollback();

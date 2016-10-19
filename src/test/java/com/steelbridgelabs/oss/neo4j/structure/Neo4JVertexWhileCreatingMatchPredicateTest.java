@@ -65,7 +65,6 @@ public class Neo4JVertexWhileCreatingMatchPredicateTest {
     @Test
     public void givenAliasShouldCreateMatchPredicate() {
         // arrange
-        Mockito.when(session.getVertexIdProvider()).thenAnswer(invocation -> provider);
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
@@ -80,7 +79,7 @@ public class Neo4JVertexWhileCreatingMatchPredicateTest {
         Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
         Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         Mockito.when(provider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "a.id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, node);
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         // act
         String result = vertex.matchPredicate("a", "id");
         // assert
