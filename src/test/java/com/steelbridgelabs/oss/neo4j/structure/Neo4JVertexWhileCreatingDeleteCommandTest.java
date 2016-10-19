@@ -41,7 +41,7 @@ import java.util.Collections;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JVertexWhileCreatingInsertCommandTest {
+public class Neo4JVertexWhileCreatingDeleteCommandTest {
 
     @Mock
     private Neo4JGraph graph;
@@ -98,7 +98,7 @@ public class Neo4JVertexWhileCreatingInsertCommandTest {
     private ResultSummary resultSummary;
 
     @Test
-    public void givenNoIdGenerationProviderShouldCreateInsertCommand() {
+    public void givenDeletedVertexNodeShouldCreateDeleteCommand() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -113,50 +113,17 @@ public class Neo4JVertexWhileCreatingInsertCommandTest {
         Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
         Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
         Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
-        Mockito.when(statementResult.hasNext()).thenAnswer(invocation -> true);
-        Mockito.when(statementResult.next()).thenAnswer(invocation -> record);
-        Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> value);
-        Mockito.when(value.asEntity()).thenAnswer(invocation -> entity);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, Collections.singletonList("L1"));
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
+        vertex.remove();
         // act
-        Neo4JDatabaseCommand command = vertex.insertCommand();
+        Neo4JDatabaseCommand command = vertex.deleteCommand();
         // assert
-        Assert.assertNull("Failed get node identifier", vertex.id());
-        Assert.assertNotNull("Failed to create insert command", command);
-        Assert.assertNotNull("Failed to create insert command statement", command.getStatement());
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "CREATE (n:`L1`{vp}) RETURN n");
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().parameters(), Values.parameters("vp", Collections.emptyMap()));
-        Assert.assertNotNull("Failed to create insert command callback", command.getCallback());
+        Assert.assertNotNull("Failed to create delete command", command);
+        Assert.assertNotNull("Failed to create delete command statement", command.getStatement());
+        Assert.assertEquals("Invalid delete command statement", command.getStatement().text(), "MATCH (v:`l1`) WHERE n.id = {id} DETACH DELETE v");
+        Assert.assertEquals("Invalid delete command statement", command.getStatement().parameters(), Values.parameters("id", 1L));
+        Assert.assertNotNull("Failed to create delete command callback", command.getCallback());
         // invoke callback
         command.getCallback().accept(statementResult);
-        // assert
-        Assert.assertNotNull("Failed get node identifier", vertex.id());
-    }
-
-    @Test
-    public void givenIdGenerationProviderShouldCreateInsertCommand() {
-        // arrange
-        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
-        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
-        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
-        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(graph.features()).thenAnswer(invocation -> features);
-        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
-        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(vertexIdProvider.generate()).thenAnswer(invocation -> 1L);
-        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, Collections.singletonList("L1"));
-        // act
-        Neo4JDatabaseCommand command = vertex.insertCommand();
-        // assert
-        Assert.assertNotNull("Failed to create insert command", command);
-        Assert.assertNotNull("Failed to create insert command statement", command.getStatement());
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "CREATE (:`L1`{vp})");
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().parameters(), Values.parameters("vp", Collections.singletonMap("id", 1L)));
-        Assert.assertNotNull("Failed to create insert command callback", command.getCallback());
     }
 }

@@ -964,7 +964,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // check labels were removed
             if (!labelsRemoved.isEmpty()) {
                 // remove labels
-                builder.append("REMOVE v").append(processLabels(labelsRemoved, false));
+                builder.append(" REMOVE v").append(processLabels(labelsRemoved, false));
             }
             // command statement
             return new Neo4JDatabaseCommand(new Statement(builder.toString(), parameters), result -> {
