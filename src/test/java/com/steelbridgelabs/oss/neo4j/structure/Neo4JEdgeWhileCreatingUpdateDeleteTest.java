@@ -112,9 +112,11 @@ public class Neo4JEdgeWhileCreatingUpdateDeleteTest {
         Mockito.when(outVertex.matchPattern(Mockito.any())).thenAnswer(invocation -> "(o)");
         Mockito.when(outVertex.matchPredicate(Mockito.any(), Mockito.any())).thenAnswer(invocation -> "ID(o) = {oid}");
         Mockito.when(outVertex.id()).thenAnswer(invocation -> 1L);
+        Mockito.when(outVertex.matchStatement(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> "MATCH (o) WHERE ID(o) = {oid}");
         Mockito.when(inVertex.matchPattern(Mockito.any())).thenAnswer(invocation -> "(i)");
         Mockito.when(inVertex.matchPredicate(Mockito.any(), Mockito.any())).thenAnswer(invocation -> "ID(i) = {iid}");
         Mockito.when(inVertex.id()).thenAnswer(invocation -> 2L);
+        Mockito.when(inVertex.matchStatement(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> "MATCH (i) WHERE ID(i) = {iid}");
         Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
         Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
