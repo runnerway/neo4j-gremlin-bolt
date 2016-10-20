@@ -318,23 +318,27 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
 
     @Override
     public Neo4JDatabaseCommand insertCommand() {
-        // create statement
-        String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " CREATE (o)-[" + (id == null ? "r" : "") + ":`" + label + "`{ep}]->(i)" + (id == null ? " RETURN r" : "");
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "ep", statementParameters());
-        // command statement
-        return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
-            // check we need to process id
-            if (id == null) {
+        // check database side id generation is required
+        if (id == null) {
+            // create statement
+            String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i) RETURN " + edgeIdProvider.matchPredicateOperand("r");
+            // command statement
+            return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
                 // check we received data
                 if (result.hasNext()) {
                     // record
                     Record record = result.next();
                     // process node identifier
-                    generatedId = edgeIdProvider.get(record.get(0).asEntity());
+                    generatedId = edgeIdProvider.processIdentifier(record.get(0).asObject());
                 }
-            }
-        });
+            });
+        }
+        // create statement
+        String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " CREATE (o)-[:`" + label + "`{ep}]->(i)";
+        // command statement
+        return new Neo4JDatabaseCommand(new Statement(statement, parameters));
     }
 
     @Override

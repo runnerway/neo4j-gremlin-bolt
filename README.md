@@ -58,7 +58,7 @@ Pros:
 
 Cons:
 
- * CREATE statements will run slower since the entity must be retrieved from the database in order to recover the generated id: `CREATE (n:label{field1: value, ..., fieldN: valueN}) RETURN n` 
+ * CREATE statements will run slower since the entity id must be retrieved from the database after insertion: `CREATE (n:label{field1: value, ..., fieldN: valueN}) RETURN ID(n)` 
  * Entity IDs in Neo4J are not guaranteed to be the same after a database restart/upgrade. Storing links to Neo4J entities outside the database based on IDs could become invalid after a database restart/upgrade. 
  
 ### Database sequence support, see [DatabaseSequenceElementIdProvider](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/blob/master/src/main/java/com/steelbridgelabs/oss/neo4j/structure/providers/DatabaseSequenceElementIdProvider.java) for more information.

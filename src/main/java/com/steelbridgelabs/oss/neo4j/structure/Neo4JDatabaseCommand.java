@@ -28,8 +28,16 @@ import java.util.function.Consumer;
  */
 class Neo4JDatabaseCommand {
 
+    private static final Consumer<StatementResult> noop = result -> {
+    };
+
     private final Statement statement;
     private final Consumer<StatementResult> callback;
+
+    public Neo4JDatabaseCommand(Statement statement) {
+        this.statement = statement;
+        this.callback = noop;
+    }
 
     public Neo4JDatabaseCommand(Statement statement, Consumer<StatementResult> callback) {
         this.statement = statement;
