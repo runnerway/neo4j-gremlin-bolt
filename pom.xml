@@ -59,7 +59,7 @@
         <!-- neo4j -->
         <neo4j.version>1.0.4</neo4j.version>
         <!-- gremlin -->
-        <gremlin.version>3.2.2</gremlin.version>
+        <gremlin.version>3.2.3</gremlin.version>
         <!-- slf4j -->
         <slf4j.version>1.7.21</slf4j.version>
         <!-- logback-classic -->
