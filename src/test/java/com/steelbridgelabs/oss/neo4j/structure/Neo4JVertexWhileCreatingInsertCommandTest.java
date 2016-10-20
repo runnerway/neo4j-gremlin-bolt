@@ -110,9 +110,9 @@ public class Neo4JVertexWhileCreatingInsertCommandTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
         Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "ID(n)");
         Mockito.when(statementResult.hasNext()).thenAnswer(invocation -> true);
         Mockito.when(statementResult.next()).thenAnswer(invocation -> record);
         Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> value);
@@ -124,7 +124,7 @@ public class Neo4JVertexWhileCreatingInsertCommandTest {
         Assert.assertNull("Failed get node identifier", vertex.id());
         Assert.assertNotNull("Failed to create insert command", command);
         Assert.assertNotNull("Failed to create insert command statement", command.getStatement());
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "CREATE (n:`L1`{vp}) RETURN n");
+        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "CREATE (n:`L1`{vp}) RETURN ID(n)");
         Assert.assertEquals("Invalid insert command statement", command.getStatement().parameters(), Values.parameters("vp", Collections.emptyMap()));
         Assert.assertNotNull("Failed to create insert command callback", command.getCallback());
         // invoke callback

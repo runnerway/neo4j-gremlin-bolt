@@ -931,23 +931,25 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // concat labels with additional labels on insertion
         SortedSet<String> labels = Stream.concat(this.labels.stream(), additionalLabels.stream()).collect(Collectors.toCollection(TreeSet::new));
         try {
-            // create statement
-            String statement = "CREATE (" + (id == null ? "n" : "") + processLabels(labels, false) + "{vp})" + (id == null ? " RETURN n" : "");
             // parameters
             Value parameters = Values.parameters("vp", statementParameters());
-            // command statement
-            return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
-                // check we need to process id
-                if (id == null) {
+            // check database side id generation is required
+            if (id == null) {
+                // create statement
+                String statement = "CREATE (n" + processLabels(labels, false) + "{vp}) RETURN " + vertexIdProvider.matchPredicateOperand("n");
+                // command statement
+                return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
                     // check we received data
                     if (result.hasNext()) {
                         // record
                         Record record = result.next();
                         // process node identifier
-                        generatedId = vertexIdProvider.get(record.get(0).asEntity());
+                        generatedId = vertexIdProvider.processIdentifier(record.get(0).asObject());
                     }
-                }
-            });
+                });
+            }
+            // command statement
+            return new Neo4JDatabaseCommand(new Statement("CREATE (" + processLabels(labels, false) + "{vp})", parameters));
         }
         finally {
             // to find vertex in database (labels + additional labels)
@@ -985,8 +987,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                 builder.append(" REMOVE v").append(processLabels(labelsRemoved, false));
             }
             // command statement
-            return new Neo4JDatabaseCommand(new Statement(builder.toString(), parameters), result -> {
-            });
+            return new Neo4JDatabaseCommand(new Statement(builder.toString(), parameters));
         }
         return null;
     }
@@ -998,8 +999,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // parameters
         Value parameters = Values.parameters("id", id());
         // command statement
-        return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
-        });
+        return new Neo4JDatabaseCommand(new Statement(statement, parameters));
     }
 
     void commit() {

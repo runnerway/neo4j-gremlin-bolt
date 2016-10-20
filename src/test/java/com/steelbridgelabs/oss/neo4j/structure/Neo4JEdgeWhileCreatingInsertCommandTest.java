@@ -86,9 +86,9 @@ public class Neo4JEdgeWhileCreatingInsertCommandTest {
         Mockito.when(inVertex.matchPredicate(Mockito.any(), Mockito.any())).thenAnswer(invocation -> "ID(i) = {iid}");
         Mockito.when(inVertex.id()).thenAnswer(invocation -> 2L);
         Mockito.when(inVertex.matchStatement(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> "MATCH (i) WHERE ID(i) = {iid}");
-        Mockito.when(edgeIdProvider.get(Mockito.any())).thenAnswer(invocation -> 3L);
+        Mockito.when(edgeIdProvider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 3L);
         Mockito.when(edgeIdProvider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(edgeIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "r.id");
+        Mockito.when(edgeIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "ID(r)");
         Mockito.when(statementResult.hasNext()).thenAnswer(invocation -> true);
         Mockito.when(statementResult.next()).thenAnswer(invocation -> record);
         Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> value);
@@ -100,7 +100,7 @@ public class Neo4JEdgeWhileCreatingInsertCommandTest {
         Assert.assertNull("Failed get node identifier", edge.id());
         Assert.assertNotNull("Failed to create insert command", command);
         Assert.assertNotNull("Failed to create insert command statement", command.getStatement());
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "MATCH (o) WHERE ID(o) = {oid} MATCH (i) WHERE ID(i) = {iid} CREATE (o)-[r:`L1`{ep}]->(i) RETURN r");
+        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "MATCH (o) WHERE ID(o) = {oid} MATCH (i) WHERE ID(i) = {iid} CREATE (o)-[r:`L1`{ep}]->(i) RETURN ID(r)");
         Assert.assertEquals("Invalid insert command statement", command.getStatement().parameters(), Values.parameters("oid", 1L, "iid", 2L, "ep", Collections.emptyMap()));
         Assert.assertNotNull("Failed to create insert command callback", command.getCallback());
         // invoke callback
