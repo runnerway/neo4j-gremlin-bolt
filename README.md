@@ -41,6 +41,28 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 # Graph API
 
+## Element ID providers
+
+The library supports an open architecture for element ID generation for new Vertices and Edges. Two element ID providers are provided out of the box:
+
+* Neo4J native id() support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
+
+```java
+    // create id provider
+    Neo4JElementIdProvider<?> provider = new Neo4JNativeElementIdProvider();
+```
+
+Advantage:
+
+ * Fewer database Hits on MATCH statements.
+
+* Database sequence support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
+
+```java
+    // create id provider
+    Neo4JElementIdProvider<?> provider = new DatabaseSequenceElementIdProvider(driver);
+```
+
 ## Connecting to the database
 
 * Create driver instance, see [neo4j-java-driver](https://github.com/neo4j/neo4j-java-driver) for more information.
@@ -50,7 +72,7 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
     Driver driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic("neo4j", "neo4j"));
 ```
 
-* Create id provider instances, see providers for more information. 
+* Create element id provider instances, see [providers](#element-id-providers) for more information. 
 
 ```java
     // create id provider instances
