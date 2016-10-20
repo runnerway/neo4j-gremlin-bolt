@@ -27,7 +27,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 
 import java.util.Collections;
@@ -36,7 +41,7 @@ import java.util.Collections;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JVertexWhileCreatingMatchPredicateTest {
+public class Neo4JVertexWhileCreatingDeleteCommandTest {
 
     @Mock
     private Neo4JGraph graph;
@@ -54,7 +59,10 @@ public class Neo4JVertexWhileCreatingMatchPredicateTest {
     private Node node;
 
     @Mock
-    private Neo4JElementIdProvider provider;
+    private Neo4JElementIdProvider vertexIdProvider;
+
+    @Mock
+    private Neo4JElementIdProvider edgeIdProvider;
 
     @Mock
     private Graph.Features.VertexFeatures vertexFeatures;
@@ -62,13 +70,39 @@ public class Neo4JVertexWhileCreatingMatchPredicateTest {
     @Mock
     private Graph.Features features;
 
+    @Mock
+    private Neo4JVertex otherVertex;
+
+    @Mock
+    private Neo4JVertex vertex1;
+
+    @Mock
+    private Neo4JVertex vertex2;
+
+    @Mock
+    private Neo4JEdge edge2;
+
+    @Mock
+    private StatementResult statementResult;
+
+    @Mock
+    private Record record;
+
+    @Mock
+    private Entity entity;
+
+    @Mock
+    private Value value;
+
+    @Mock
+    private ResultSummary resultSummary;
+
     @Test
-    public void givenAliasShouldCreateMatchPredicate() {
+    public void givenDeletedVertexNodeShouldCreateDeleteCommand() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
         Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
-        Mockito.when(partition.vertexMatchPredicate(Mockito.eq("a"))).thenAnswer(invocation -> "(a:l1 OR a:l2)");
         Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
         Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
         Mockito.when(graph.features()).thenAnswer(invocation -> features);
@@ -76,14 +110,20 @@ public class Neo4JVertexWhileCreatingMatchPredicateTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "a.id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
+        vertex.remove();
         // act
-        String result = vertex.matchPredicate("a", "id");
+        Neo4JDatabaseCommand command = vertex.deleteCommand();
         // assert
-        Assert.assertNotNull("Failed to create match predicate", result);
-        Assert.assertEquals("Invalid match predicate", result, "a.id = {id}");
+        Assert.assertNotNull("Failed to create delete command", command);
+        Assert.assertNotNull("Failed to create delete command statement", command.getStatement());
+        Assert.assertEquals("Invalid delete command statement", command.getStatement().text(), "MATCH (v:`l1`) WHERE n.id = {id} DETACH DELETE v");
+        Assert.assertEquals("Invalid delete command statement", command.getStatement().parameters(), Values.parameters("id", 1L));
+        Assert.assertNotNull("Failed to create delete command callback", command.getCallback());
+        // invoke callback
+        command.getCallback().accept(statementResult);
     }
 }

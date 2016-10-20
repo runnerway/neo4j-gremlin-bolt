@@ -49,7 +49,7 @@ public class Neo4JGraphWhileGetPartitionTest {
     public void givenNewGraphShouldCreatePartitionWithAllLabels() {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
             Neo4JReadPartition partition = graph.getPartition();
@@ -63,7 +63,7 @@ public class Neo4JGraphWhileGetPartitionTest {
     public void givenPartitionShouldUsePartitionForAllOperations() {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         Mockito.when(partition.containsVertex(Mockito.any())).thenAnswer(invocation -> true);
         try (Neo4JGraph graph = new Neo4JGraph(partition, new String[0], driver, provider, provider)) {
             // act
@@ -78,7 +78,7 @@ public class Neo4JGraphWhileGetPartitionTest {
     public void givenVertexLabelsOutsidePartitionShouldThrowException() {
         // arrange
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         Mockito.when(partition.containsVertex(Mockito.any())).thenAnswer(invocation -> false);
         // act
         new Neo4JGraph(partition, new String[0], driver, provider, provider);

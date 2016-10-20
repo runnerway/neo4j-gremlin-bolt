@@ -18,21 +18,29 @@
 
 package com.steelbridgelabs.oss.neo4j.structure;
 
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
+
+import java.util.function.Consumer;
 
 /**
  * @author Rogelio J. Baucells
  */
-abstract class Neo4JElement implements Element {
+class Neo4JDatabaseCommand {
 
-    public abstract Neo4JDatabaseCommand insertCommand();
+    private final Statement statement;
+    private final Consumer<StatementResult> callback;
 
-    public abstract Neo4JDatabaseCommand updateCommand();
+    public Neo4JDatabaseCommand(Statement statement, Consumer<StatementResult> callback) {
+        this.statement = statement;
+        this.callback = callback;
+    }
 
-    public abstract Neo4JDatabaseCommand deleteCommand();
+    public Statement getStatement() {
+        return statement;
+    }
 
-    public abstract boolean isDirty();
-
-    public abstract boolean isTransient();
+    public Consumer<StatementResult> getCallback() {
+        return callback;
+    }
 }

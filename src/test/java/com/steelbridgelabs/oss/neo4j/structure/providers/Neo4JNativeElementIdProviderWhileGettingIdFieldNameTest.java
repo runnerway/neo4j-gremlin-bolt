@@ -21,38 +21,21 @@ package com.steelbridgelabs.oss.neo4j.structure.providers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.neo4j.driver.v1.Driver;
 
 /**
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class DatabaseSequenceElementIdProviderWhileGettingIdFieldNameTest {
-
-    @Mock
-    private Driver driver;
+public class Neo4JNativeElementIdProviderWhileGettingIdFieldNameTest {
 
     @Test
-    public void givenNoIdFieldNameShouldUseDefaultValue() {
+    public void givenProviderShouldReturnNull() {
         // arrange
-        DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver);
+        Neo4JNativeElementIdProvider provider = new Neo4JNativeElementIdProvider();
         // act
         String fieldName = provider.fieldName();
         // assert
-        Assert.assertNotNull("Invalid identifier field name", fieldName);
-        Assert.assertTrue("Provider returned an invalid identifier field name", DatabaseSequenceElementIdProvider.DefaultIdFieldName.compareTo(fieldName) == 0);
-    }
-
-    @Test
-    public void givenIdFieldNameShouldUseUseIt() {
-        // arrange
-        DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 1000, "field1", "label");
-        // act
-        String fieldName = provider.fieldName();
-        // assert
-        Assert.assertNotNull("Invalid identifier field name", fieldName);
-        Assert.assertTrue("Provider returned an invalid identifier field name", "field1".compareTo(fieldName) == 0);
+        Assert.assertNull("Invalid identifier field name", fieldName);
     }
 }

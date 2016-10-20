@@ -25,6 +25,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.types.Entity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,13 +74,26 @@ public class DatabaseSequenceElementIdProvider implements Neo4JElementIdProvider
     }
 
     /**
-     * Gets the identifier field name.
+     * Gets the field name used for {@link Entity} identifier.
      *
-     * @return The identifier field name.
+     * @return The field name used for {@link Entity} identifier or <code>null</code> if not using field for identifier.
      */
     @Override
-    public String idFieldName() {
+    public String fieldName() {
         return idFieldName;
+    }
+
+    /**
+     * Gets the identifier value from a neo4j {@link Entity}.
+     *
+     * @param entity The neo4j {@link Entity}.
+     * @return The neo4j {@link Entity} identifier.
+     */
+    @Override
+    public Long get(Entity entity) {
+        Objects.requireNonNull(entity, "entity cannot be null");
+        // return property value
+        return entity.get(idFieldName).asLong();
     }
 
     /**
@@ -89,7 +103,7 @@ public class DatabaseSequenceElementIdProvider implements Neo4JElementIdProvider
      * @return A unique identifier within the database sequence generator.
      */
     @Override
-    public Long generateId() {
+    public Long generate() {
         // get maximum identifier we can use (before obtaining new identifier to make sure it is in the current pool)
         long max = maximum.get();
         // generate new identifier
@@ -170,5 +184,18 @@ public class DatabaseSequenceElementIdProvider implements Neo4JElementIdProvider
             return Long.valueOf((String)id);
         // error
         throw new IllegalArgumentException(String.format("Expected an id that is convertible to Long but received %s", id.getClass()));
+    }
+
+    /**
+     * Gets the MATCH WHERE predicate operand.
+     *
+     * @param alias The neo4j {@link Entity} alias in a MATCH statement.
+     * @return The MATCH WHERE predicate operand.
+     */
+    @Override
+    public String matchPredicateOperand(String alias) {
+        Objects.requireNonNull(alias, "alias cannot be null");
+        // alias.identifier
+        return alias + "." + idFieldName;
     }
 }

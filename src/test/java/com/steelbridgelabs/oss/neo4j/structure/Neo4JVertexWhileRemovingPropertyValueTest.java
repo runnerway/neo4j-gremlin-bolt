@@ -74,9 +74,9 @@ public class Neo4JVertexWhileRemovingPropertyValueTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.single, "test", 1L);
         // act
         result.remove();
@@ -96,9 +96,9 @@ public class Neo4JVertexWhileRemovingPropertyValueTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.list, "test", 1L);
         // act
         result.remove();
@@ -118,11 +118,11 @@ public class Neo4JVertexWhileRemovingPropertyValueTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         vertex.property(VertexProperty.Cardinality.list, "test", 1L);
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 3L);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 3L);
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.list, "test", 2L);
         // act
         result.remove();
@@ -142,9 +142,9 @@ public class Neo4JVertexWhileRemovingPropertyValueTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.set, "test", 1L);
         // act
         result.remove();
@@ -164,11 +164,11 @@ public class Neo4JVertexWhileRemovingPropertyValueTest {
         Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.emptyList());
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, node);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
         vertex.property(VertexProperty.Cardinality.set, "test", 1L);
-        Mockito.when(provider.generateId()).thenAnswer(invocation -> 3L);
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 3L);
         VertexProperty<?> result = vertex.property(VertexProperty.Cardinality.set, "test", 2L);
         // act
         result.remove();

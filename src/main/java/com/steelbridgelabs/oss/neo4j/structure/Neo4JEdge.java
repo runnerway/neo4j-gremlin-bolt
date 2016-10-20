@@ -26,6 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -107,22 +108,21 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
 
     private final Neo4JGraph graph;
     private final Neo4JSession session;
+    private final Neo4JElementIdProvider<?> edgeIdProvider;
     private final Map<String, Neo4JEdgeProperty> properties = new HashMap<>();
-    private final String idFieldName;
-    private final Object id;
     private final String label;
     private final Neo4JVertex out;
     private final Neo4JVertex in;
 
+    private Object id;
     private boolean dirty = false;
     private boolean newEdge;
     private Map<String, Neo4JEdgeProperty> originalProperties;
 
-    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider provider, Object id, String label, Neo4JVertex out, Neo4JVertex in) {
+    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider<?> edgeIdProvider, String label, Neo4JVertex out, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(provider, "provider cannot be null");
-        Objects.requireNonNull(id, "id cannot be null");
+        Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(label, "label cannot be null");
         Objects.requireNonNull(properties, "properties cannot be null");
         Objects.requireNonNull(out, "out cannot be null");
@@ -130,33 +130,36 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // store fields
         this.graph = graph;
         this.session = session;
-        this.idFieldName = provider.idFieldName();
-        this.id = provider.processIdentifier(id);
+        this.edgeIdProvider = edgeIdProvider;
         this.label = label;
         this.out = out;
         this.in = in;
+        // generate id
+        this.id = edgeIdProvider.generate();
         // initialize original properties
         originalProperties = new HashMap<>();
         // this is a new edge (transient)
         newEdge = true;
     }
 
-    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider provider, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
+    Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider<?> edgeIdProvider, Neo4JVertex out, Relationship relationship, Neo4JVertex in) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(session, "session cannot be null");
-        Objects.requireNonNull(provider, "provider cannot be null");
+        Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
         Objects.requireNonNull(out, "out cannot be null");
         Objects.requireNonNull(relationship, "relationship cannot be null");
         Objects.requireNonNull(in, "in cannot be null");
         // store fields
         this.graph = graph;
         this.session = session;
-        this.idFieldName = provider.idFieldName();
+        this.edgeIdProvider = edgeIdProvider;
         // from relationship
-        this.id = provider.processIdentifier(relationship.get(idFieldName).asObject());
+        this.id = edgeIdProvider.get(relationship);
         this.label = relationship.type();
+        // id field name (if any)
+        String idFieldName = edgeIdProvider.fieldName();
         // copy properties from relationship, remove idFieldName from map
-        StreamSupport.stream(relationship.keys().spliterator(), false).filter(key -> idFieldName.compareTo(key) != 0).forEach(key -> {
+        StreamSupport.stream(relationship.keys().spliterator(), false).filter(key -> !key.equals(idFieldName)).forEach(key -> {
             // value
             Value value = relationship.get(key);
             // add property value
@@ -304,44 +307,61 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private Map<String, Object> statementParameters() {
         // process properties
         Map<String, Object> parameters = properties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value()));
-        // append id
-        parameters.put(idFieldName, id);
+        // append id field if required
+        String idFieldName = edgeIdProvider.fieldName();
+        if (id != null && idFieldName != null)
+            parameters.put(idFieldName, id);
         // return parameters
         return parameters;
     }
 
     @Override
-    public Statement insertStatement() {
+    public Neo4JDatabaseCommand insertCommand() {
         // create statement
-        String statement = "MATCH " + out.matchPattern("o", "oid") + ", " + in.matchPattern("i", "iid") + " CREATE (o)-[r:`" + label + "`{ep}]->(i)";
+        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " CREATE (o)-[" + (id == null ? "r" : "") + ":`" + label + "`{ep}]->(i)" + (id == null ? " RETURN r" : "");
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "ep", statementParameters());
-        // reset flags
-        dirty = false;
         // command statement
-        return new Statement(statement, parameters);
+        return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
+            // check we need to process id
+            if (id == null) {
+                // check we received data
+                if (result.hasNext()) {
+                    // record
+                    Record record = result.next();
+                    // process node identifier
+                    id = edgeIdProvider.get(record.get(0).asEntity());
+                }
+            }
+        });
     }
 
     @Override
-    public Statement updateStatement() {
-        // update statement
-        String statement = "MATCH " + out.matchPattern("o", "oid") + ", " + in.matchPattern("i", "iid") + " MERGE (o)-[r:`" + label + "`{" + idFieldName + ": {id}}]->(i) ON MATCH SET r = {rp}";
-        // parameters
-        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
-        // reset flags
-        dirty = false;
-        // command statement
-        return new Statement(statement, parameters);
+    public Neo4JDatabaseCommand updateCommand() {
+        // check edge is dirty
+        if (dirty) {
+            // update statement
+            String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
+            // parameters
+            Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
+            // reset flags
+            dirty = false;
+            // command statement
+            return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
+            });
+        }
+        return null;
     }
 
     @Override
-    public Statement deleteStatement() {
+    public Neo4JDatabaseCommand deleteCommand() {
         // delete statement
-        String statement = "MATCH " + out.matchPattern("o", "oid") + "-[r:`" + label + "`{" + idFieldName + ": {id}}]->" + in.matchPattern("i", "iid") + " DELETE r";
+        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MATCH (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} DELETE r";
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id);
         // command statement
-        return new Statement(statement, parameters);
+        return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
+        });
     }
 
     void commit() {

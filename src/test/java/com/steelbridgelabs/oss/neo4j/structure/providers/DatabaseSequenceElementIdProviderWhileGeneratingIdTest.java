@@ -64,12 +64,12 @@ public class DatabaseSequenceElementIdProviderWhileGeneratingIdTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 2, "field1", "label");
         // act
-        Long id = provider.generateId();
+        Long id = provider.generate();
         // assert
         Assert.assertNotNull("Invalid identifier value", id);
         Assert.assertTrue("Provider returned an invalid identifier value", id == 1L);
         // act
-        id = provider.generateId();
+        id = provider.generate();
         // assert
         Assert.assertNotNull("Invalid identifier value", id);
         Assert.assertTrue("Provider returned an invalid identifier value", id == 2L);
@@ -86,14 +86,14 @@ public class DatabaseSequenceElementIdProviderWhileGeneratingIdTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         DatabaseSequenceElementIdProvider provider = new DatabaseSequenceElementIdProvider(driver, 1, "field1", "label");
         // act
-        Long id = provider.generateId();
+        Long id = provider.generate();
         // assert
         Assert.assertNotNull("Invalid identifier value", id);
         Assert.assertTrue("Provider returned an invalid identifier value", id == 1L);
         // arrange
         Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> Values.value(2));
         // act
-        id = provider.generateId();
+        id = provider.generate();
         // assert
         Assert.assertNotNull("Invalid identifier value", id);
         Assert.assertTrue("Provider returned an invalid identifier value", id == 2L);

@@ -27,7 +27,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 
 import java.util.Arrays;
@@ -37,7 +42,7 @@ import java.util.Collections;
  * @author Rogelio J. Baucells
  */
 @RunWith(MockitoJUnitRunner.class)
-public class Neo4JVertexWhileCreatingMatchPatternTest {
+public class Neo4JVertexWhileCreatingUpdateCommandTest {
 
     @Mock
     private Neo4JGraph graph;
@@ -55,7 +60,10 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
     private Node node;
 
     @Mock
-    private Neo4JElementIdProvider provider;
+    private Neo4JElementIdProvider vertexIdProvider;
+
+    @Mock
+    private Neo4JElementIdProvider edgeIdProvider;
 
     @Mock
     private Graph.Features.VertexFeatures vertexFeatures;
@@ -63,8 +71,35 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
     @Mock
     private Graph.Features features;
 
+    @Mock
+    private Neo4JVertex otherVertex;
+
+    @Mock
+    private Neo4JVertex vertex1;
+
+    @Mock
+    private Neo4JVertex vertex2;
+
+    @Mock
+    private Neo4JEdge edge2;
+
+    @Mock
+    private StatementResult statementResult;
+
+    @Mock
+    private Record record;
+
+    @Mock
+    private Entity entity;
+
+    @Mock
+    private Value value;
+
+    @Mock
+    private ResultSummary resultSummary;
+
     @Test
-    public void givenNoAliasShouldCreateMatchPattern() {
+    public void givenNotDirtyNodeShouldReturnNull() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -76,19 +111,18 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
         // act
-        String result = vertex.matchPattern(null);
+        Neo4JDatabaseCommand command = vertex.updateCommand();
         // assert
-        Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(:`l1`)");
+        Assert.assertNull("Failed to create update command", command);
     }
 
     @Test
-    public void givenAliasShouldCreateMatchPattern() {
+    public void givenNewPropertyShouldCreateUpdateCommand() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -100,19 +134,55 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
+        vertex.property("key2", "value2");
         // act
-        String result = vertex.matchPattern("a");
+        Neo4JDatabaseCommand command = vertex.updateCommand();
         // assert
-        Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(a:`l1`)");
+        Assert.assertNotNull("Failed to create update command", command);
+        Assert.assertNotNull("Failed to create update command statement", command.getStatement());
+        Assert.assertEquals("Invalid update command statement", command.getStatement().text(), "MERGE (v:`l1`) WHERE n.id = {id} ON MATCH SET v = {vp}");
+        Assert.assertEquals("Invalid update command statement", command.getStatement().parameters(), Values.parameters("id", 1L, "vp", Values.parameters("key1", "value1", "key2", "value2", "id", 1L)));
+        Assert.assertNotNull("Failed to create update command callback", command.getCallback());
+        // invoke callback
+        command.getCallback().accept(statementResult);
     }
 
     @Test
-    public void givenVertexWithMultipleLabelsShouldCreateMatchPattern() {
+    public void givenNewLabelShouldCreateUpdateCommand() {
+        // arrange
+        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
+        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(graph.features()).thenAnswer(invocation -> features);
+        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
+        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
+        vertex.addLabel("Test");
+        // act
+        Neo4JDatabaseCommand command = vertex.updateCommand();
+        // assert
+        Assert.assertNotNull("Failed to create update command", command);
+        Assert.assertNotNull("Failed to create update command statement", command.getStatement());
+        Assert.assertEquals("Invalid update command statement", command.getStatement().text(), "MERGE (v:`l1`) WHERE n.id = {id} ON MATCH SET v:`Test`");
+        Assert.assertEquals("Invalid update command statement", command.getStatement().parameters(), Values.parameters("id", 1L));
+        Assert.assertNotNull("Failed to create update command callback", command.getCallback());
+        // invoke callback
+        command.getCallback().accept(statementResult);
+    }
+
+    @Test
+    public void givenRemoveLabelShouldCreateUpdateCommand() {
         // arrange
         Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
         Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
@@ -124,39 +194,20 @@ public class Neo4JVertexWhileCreatingMatchPatternTest {
         Mockito.when(node.labels()).thenAnswer(invocation -> Arrays.asList("l1", "l2"));
         Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
         Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
+        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
+        vertex.removeLabel("l2");
         // act
-        String result = vertex.matchPattern("a");
+        Neo4JDatabaseCommand command = vertex.updateCommand();
         // assert
-        Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(a:`l1`:`l2`)");
-    }
-
-    @Test
-    public void givenNewVertexLabelShouldCreateMatchPatternWithoutLabel() {
-        // arrange
-        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
-        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
-        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
-        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
-        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
-        Mockito.when(graph.features()).thenAnswer(invocation -> features);
-        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
-        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
-        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
-        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
-        Mockito.when(provider.generate()).thenAnswer(invocation -> 2L);
-        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
-        Mockito.when(provider.get(Mockito.any())).thenAnswer(invocation -> 1L);
-        Neo4JVertex vertex = new Neo4JVertex(graph, session, provider, provider, node);
-        vertex.addLabel("new");
-        // act
-        String result = vertex.matchPattern(null);
-        // assert
-        Assert.assertNotNull("Failed to create match pattern", result);
-        Assert.assertEquals("Invalid match pattern", result, "(:`l1`)");
+        Assert.assertNotNull("Failed to create update command", command);
+        Assert.assertNotNull("Failed to create update command statement", command.getStatement());
+        Assert.assertEquals("Invalid update command statement", command.getStatement().text(), "MERGE (v:`l1`:`l2`) WHERE n.id = {id} REMOVE v:`l2`");
+        Assert.assertEquals("Invalid update command statement", command.getStatement().parameters(), Values.parameters("id", 1L));
+        Assert.assertNotNull("Failed to create update command callback", command.getCallback());
+        // invoke callback
+        command.getCallback().accept(statementResult);
     }
 }

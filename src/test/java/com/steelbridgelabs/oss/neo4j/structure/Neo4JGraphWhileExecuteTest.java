@@ -59,7 +59,7 @@ public class Neo4JGraphWhileExecuteTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
             StatementResult result = graph.execute("MATCH (n) RETURN n");
@@ -75,7 +75,7 @@ public class Neo4JGraphWhileExecuteTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
             StatementResult result = graph.execute(new Statement("MATCH (n) RETURN n"));
@@ -91,7 +91,7 @@ public class Neo4JGraphWhileExecuteTest {
         Mockito.when(driver.session()).thenAnswer(invocation -> session);
         Mockito.when(session.beginTransaction()).thenAnswer(invocation -> transaction);
         Mockito.when(transaction.run(Mockito.any(Statement.class))).thenAnswer(invocation -> statementResult);
-        Mockito.when(provider.idFieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
         try (Neo4JGraph graph = new Neo4JGraph(driver, provider, provider)) {
             // act
             StatementResult result = graph.execute("MATCH (n{id: {id}}) RETURN n", Collections.singletonMap("id", 10));
