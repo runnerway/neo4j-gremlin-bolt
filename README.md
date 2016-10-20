@@ -54,7 +54,7 @@ The library supports an open architecture for element ID generation for new Vert
 Pros:
 
  * IDs are stored as `java.lang.Long` instances.
- * Fewer database Hits on MATCH statements since index lookups are not required at the time of locating an entity by id: `MATCH (n:Label) WHERE ID(n) = {id} RETURN n`
+ * Fewer database hits on MATCH statements since index lookups are not required at the time of locating an entity by id: `MATCH (n:Label) WHERE ID(n) = {id} RETURN n`
 
 Cons:
 
@@ -70,13 +70,13 @@ Cons:
 Pros:
 
  * IDs are stored as `java.lang.Long` instances.
- * CREATE statements will run faster since there is no need to retrieve the entity after an insert operation: `CREATE (n:label{field1: value, ..., fieldN: valueN})` 
+ * CREATE statements will run faster since there is no need to retrieve the entity after an insert operation: `CREATE (n:label{id: 1, field1: value, ..., fieldN: valueN})` 
  * Entity IDs are guaranteed to be the same after a database restart/upgrade since they are stored as property values. 
 
 Cons:
 
  * A unique index is required for each one of the Labels used in your model.
- * More database Hits on MATCH statements since an index lookup is required in order to locate an entity by id: `MATCH (n:Label) WHERE n.id = {id} RETURN n`
+ * More database hits on MATCH statements since an index lookup is required in order to locate an entity by id: `MATCH (n:Label) WHERE n.id = {id} RETURN n`
 
 ### Custom providers, by implementing the [Neo4JElementIdProvider](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/blob/master/src/main/java/com/steelbridgelabs/oss/neo4j/structure/Neo4JElementIdProvider.java) interface.
 
