@@ -43,25 +43,42 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 ## Element ID providers
 
-The library supports an open architecture for element ID generation for new Vertices and Edges. Two element ID providers are provided out of the box:
+The library supports an open architecture for element ID generation for new Vertices and Edges. The following element ID providers are supported out of the box:
 
-* Neo4J native id() support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
+### Neo4J native id() support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
 
 ```java
     // create id provider
     Neo4JElementIdProvider<?> provider = new Neo4JNativeElementIdProvider();
 ```
+Pros:
 
-Advantage:
+ * IDs are stored as `java.lang.Long` instances.
+ * Fewer database Hits on MATCH statements since index lookups are not required at the time of locating an entity by id: `MATCH (n:Label) WHERE ID(n) = {id} RETURN n`
 
- * Fewer database Hits on MATCH statements.
+Cons:
 
-* Database sequence support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
+ * CREATE statements will run slower since the entity must be retrieved from the database in order to recover the generated id: `CREATE (n:label{field1: value, ..., fieldN: valueN}) RETURN n` 
+ * Entity IDs in Neo4J are not guaranteed to be the same after a database restart/upgrade. Storing links to Neo4J entities outside the database based on IDs could be invalid after a database restart/upgrade. 
+ 
+### Database sequence support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
 
 ```java
     // create id provider
     Neo4JElementIdProvider<?> provider = new DatabaseSequenceElementIdProvider(driver);
 ```
+Pros:
+
+ * IDs are stored as `java.lang.Long` instances.
+ * CREATE statements will run faster since there is no need to retrieve the entity after an insert operation: `CREATE (n:label{field1: value, ..., fieldN: valueN})` 
+ * Entity IDs are guaranteed to be the same after a database restart/upgrade since they are stored as property values. 
+
+Cons:
+
+ * A unique index is required for each one of the Labels used in your model.
+ * More database Hits on MATCH statements since an index lookup is required in order to locate an entity by id: `MATCH (n:Label) WHERE n.id = {id} RETURN n`
+
+### Custom providers, by implementing the [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Neo4JElementIdProvider.html) interface.
 
 ## Connecting to the database
 
