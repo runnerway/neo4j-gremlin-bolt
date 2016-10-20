@@ -216,6 +216,7 @@
                         <exclude>**/target/**</exclude>
                         <exclude>DEPENDENCIES</exclude>
                         <exclude>README.md</exclude>
+                        <exclude>CHANGELOG.md</exclude>
                         <exclude>src/main/resources/META-INF/services/org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin</exclude>
                         <exclude>.travis/**</exclude>
                     </excludes>
