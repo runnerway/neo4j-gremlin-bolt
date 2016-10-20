@@ -45,7 +45,7 @@ neo4j-gremlin-bolt and it's modules are licensed under the [Apache License v 2.0
 
 The library supports an open architecture for element ID generation for new Vertices and Edges. The following element ID providers are supported out of the box:
 
-### Neo4J native id() support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
+### Neo4J native id() support, see [Neo4JNativeElementIdProvider](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/blob/master/src/main/java/com/steelbridgelabs/oss/neo4j/structure/providers/Neo4JNativeElementIdProvider.java) for more information.
 
 ```java
     // create id provider
@@ -59,9 +59,9 @@ Pros:
 Cons:
 
  * CREATE statements will run slower since the entity must be retrieved from the database in order to recover the generated id: `CREATE (n:label{field1: value, ..., fieldN: valueN}) RETURN n` 
- * Entity IDs in Neo4J are not guaranteed to be the same after a database restart/upgrade. Storing links to Neo4J entities outside the database based on IDs could be invalid after a database restart/upgrade. 
+ * Entity IDs in Neo4J are not guaranteed to be the same after a database restart/upgrade. Storing links to Neo4J entities outside the database based on IDs could become invalid after a database restart/upgrade. 
  
-### Database sequence support, see [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/providers/Neo4JNativeElementIdProvider.html) for more information.
+### Database sequence support, see [DatabaseSequenceElementIdProvider](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/blob/master/src/main/java/com/steelbridgelabs/oss/neo4j/structure/providers/DatabaseSequenceElementIdProvider.java) for more information.
 
 ```java
     // create id provider
@@ -78,7 +78,7 @@ Cons:
  * A unique index is required for each one of the Labels used in your model.
  * More database Hits on MATCH statements since an index lookup is required in order to locate an entity by id: `MATCH (n:Label) WHERE n.id = {id} RETURN n`
 
-### Custom providers, by implementing the [Neo4JNativeElementIdProvider](http://tinkerpop.apache.org/javadocs/current/core/org/apache/tinkerpop/gremlin/structure/Neo4JElementIdProvider.html) interface.
+### Custom providers, by implementing the [Neo4JElementIdProvider](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/blob/master/src/main/java/com/steelbridgelabs/oss/neo4j/structure/Neo4JElementIdProvider.java) interface.
 
 ## Connecting to the database
 
