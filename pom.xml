@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-gremlin-bolt</artifactId>
-    <version>0.2.10</version>
+    <version>0.2.11</version>
     <packaging>jar</packaging>
     <name>SteelBridge Labs Neo4J Gremlin (Bolt) integration</name>
     <description>SteelBridge Labs Neo4J Gremlin (Bolt) integration</description>
@@ -59,7 +59,7 @@
         <!-- neo4j -->
         <neo4j.version>1.0.4</neo4j.version>
         <!-- gremlin -->
-        <gremlin.version>3.2.1</gremlin.version>
+        <gremlin.version>3.2.3</gremlin.version>
         <!-- slf4j -->
         <slf4j.version>1.7.21</slf4j.version>
         <!-- logback-classic -->
@@ -78,7 +78,7 @@
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
+                    <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -216,6 +216,7 @@
                         <exclude>**/target/**</exclude>
                         <exclude>DEPENDENCIES</exclude>
                         <exclude>README.md</exclude>
+                        <exclude>CHANGELOG.md</exclude>
                         <exclude>src/main/resources/META-INF/services/org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin</exclude>
                         <exclude>.travis/**</exclude>
                     </excludes>
