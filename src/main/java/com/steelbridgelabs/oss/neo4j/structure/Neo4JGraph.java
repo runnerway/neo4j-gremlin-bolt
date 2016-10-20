@@ -178,6 +178,24 @@ public class Neo4JGraph implements Graph {
     }
 
     /**
+     * Gets the {@link Neo4JElementIdProvider} used for vertex id generation.
+     *
+     * @return The {@link Neo4JElementIdProvider} instance.
+     */
+    public Neo4JElementIdProvider<?> getVertexIdProvider() {
+        return vertexIdProvider;
+    }
+
+    /**
+     * Gets the {@link Neo4JElementIdProvider} used for edge id generation.
+     *
+     * @return The {@link Neo4JElementIdProvider} instance.
+     */
+    public Neo4JElementIdProvider<?> getEdgeIdProvider() {
+        return edgeIdProvider;
+    }
+
+    /**
      * Gets the labels that will be applied to vertices created by the current {@link Neo4JGraph}.
      *
      * @return The additional labels for new vertices.

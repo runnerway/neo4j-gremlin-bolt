@@ -338,15 +338,19 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
 
     @Override
     public Neo4JDatabaseCommand updateCommand() {
-        // update statement
-        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
-        // parameters
-        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
-        // reset flags
-        dirty = false;
-        // command statement
-        return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
-        });
+        // check edge is dirty
+        if (dirty) {
+            // update statement
+            String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
+            // parameters
+            Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
+            // reset flags
+            dirty = false;
+            // command statement
+            return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
+            });
+        }
+        return null;
     }
 
     @Override
