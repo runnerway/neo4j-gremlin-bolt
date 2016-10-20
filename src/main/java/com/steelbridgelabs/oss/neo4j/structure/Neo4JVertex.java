@@ -165,6 +165,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
 
     private static final AtomicLong propertyIdProvider = new AtomicLong(0L);
 
+    private final Object id;
     private final Neo4JGraph graph;
     private final Neo4JReadPartition partition;
     private final Neo4JSession session;
@@ -181,7 +182,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private final SortedSet<String> labels;
     private final Set<String> additionalLabels;
 
-    private Object id;
+    private Object generatedId = null;
     private boolean outEdgesLoaded = false;
     private boolean inEdgesLoaded = false;
     private boolean dirty = false;
@@ -278,7 +279,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      */
     @Override
     public Object id() {
-        return id;
+        return id != null ? id : generatedId;
     }
 
     /**
@@ -370,6 +371,23 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         return vertexIdProvider.matchPredicateOperand(alias) + " = {" + idParameterName + "}" + (partition.usesMatchPredicate() ? " AND (" + partition.vertexMatchPredicate(alias) + ")" : "");
     }
 
+    /**
+     * Generates a Cypher MATCH statement for the vertex, example:
+     * <p>
+     * MATCH (alias) WHERE alias.id = {id} AND (alias:Label1 OR alias:Label2)
+     * </p>
+     *
+     * @param alias           The node alias.
+     * @param idParameterName The name of the parameter that contains the vertex id.
+     * @return the Cypher MATCH predicate or <code>null</code> if not required to MATCH the vertex.
+     */
+    public String matchStatement(String alias, String idParameterName) {
+        Objects.requireNonNull(alias, "alias cannot be null");
+        Objects.requireNonNull(idParameterName, "idParameterName cannot be null");
+        // create statement
+        return "MATCH " + matchPattern(alias) + " WHERE " + matchPredicate(alias, idParameterName);
+    }
+
     @Override
     public boolean isDirty() {
         return dirty || !labelsAdded.isEmpty() || !labelsRemoved.isEmpty();
@@ -436,7 +454,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // parameters
         Map<String, Object> parameters = new HashMap<>();
         // vertex id
-        parameters.put("id", id);
+        parameters.put("id", id());
         // out edges
         if (direction == Direction.OUT) {
             // check we have all edges in memory
@@ -580,7 +598,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // parameters
         Map<String, Object> parameters = new HashMap<>();
         // vertex id
-        parameters.put("id", id);
+        parameters.put("id", id());
         // out edges
         if (direction == Direction.OUT) {
             // check we have all edges in memory
@@ -926,7 +944,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                         // record
                         Record record = result.next();
                         // process node identifier
-                        id = vertexIdProvider.get(record.get(0).asEntity());
+                        generatedId = vertexIdProvider.get(record.get(0).asEntity());
                     }
                 }
             });
@@ -948,7 +966,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             // merge statement
             builder.append("MERGE ").append(matchPattern("v")).append(" WHERE ").append(matchPredicate("v", "id"));
             // id parameter
-            parameters.put("id", id);
+            parameters.put("id", id());
             // check vertex is dirty
             if (dirty) {
                 // set properties
@@ -978,7 +996,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // create statement
         String statement = "MATCH " + matchPattern("v") + " WHERE " + matchPredicate("v", "id") + " DETACH DELETE v";
         // parameters
-        Value parameters = Values.parameters("id", id);
+        Value parameters = Values.parameters("id", id());
         // command statement
         return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
         });
@@ -1035,7 +1053,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      */
     @Override
     public boolean equals(final Object object) {
-        return object instanceof Vertex && ElementHelper.areEqual(this, object);
+        // ElementHelper.areEqual is implemented on this.id(), handle the case of generated ids
+        return object instanceof Vertex && (id != null ? ElementHelper.areEqual(this, object) : super.equals(object));
     }
 
     /**
@@ -1043,7 +1062,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
      */
     @Override
     public int hashCode() {
-        return ElementHelper.hashCode(this);
+        // ElementHelper.hashCode() is implemented on this.id(), handle the case of generated ids
+        return id != null ? ElementHelper.hashCode(this) : super.hashCode();
     }
 
     /**

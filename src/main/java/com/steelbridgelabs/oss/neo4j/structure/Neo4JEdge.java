@@ -106,6 +106,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         }
     }
 
+    private final Object id;
     private final Neo4JGraph graph;
     private final Neo4JSession session;
     private final Neo4JElementIdProvider<?> edgeIdProvider;
@@ -114,7 +115,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private final Neo4JVertex out;
     private final Neo4JVertex in;
 
-    private Object id;
+    private Object generatedId = null;
     private boolean dirty = false;
     private boolean newEdge;
     private Map<String, Neo4JEdgeProperty> originalProperties;
@@ -196,7 +197,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
      */
     @Override
     public Object id() {
-        return id;
+        return id != null ? id : generatedId;
     }
 
     /**
@@ -318,7 +319,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Neo4JDatabaseCommand insertCommand() {
         // create statement
-        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " CREATE (o)-[" + (id == null ? "r" : "") + ":`" + label + "`{ep}]->(i)" + (id == null ? " RETURN r" : "");
+        String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " CREATE (o)-[" + (id == null ? "r" : "") + ":`" + label + "`{ep}]->(i)" + (id == null ? " RETURN r" : "");
         // parameters
         Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "ep", statementParameters());
         // command statement
@@ -330,7 +331,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
                     // record
                     Record record = result.next();
                     // process node identifier
-                    id = edgeIdProvider.get(record.get(0).asEntity());
+                    generatedId = edgeIdProvider.get(record.get(0).asEntity());
                 }
             }
         });
@@ -341,9 +342,9 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // check edge is dirty
         if (dirty) {
             // update statement
-            String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
+            String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
             // parameters
-            Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id, "rp", statementParameters());
+            Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id(), "rp", statementParameters());
             // reset flags
             dirty = false;
             // command statement
@@ -356,9 +357,9 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public Neo4JDatabaseCommand deleteCommand() {
         // delete statement
-        String statement = "MATCH " + out.matchPattern("o") + " WHERE " + out.matchPredicate("o", "oid") + " MATCH " + in.matchPattern("i") + " WHERE " + in.matchPredicate("i", "iid") + " MATCH (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} DELETE r";
+        String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " MATCH (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} DELETE r";
         // parameters
-        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id);
+        Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id());
         // command statement
         return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
         });
@@ -389,7 +390,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
      */
     @Override
     public boolean equals(final Object object) {
-        return object instanceof Edge && ElementHelper.areEqual(this, object);
+        // ElementHelper.areEqual is implemented on this.id(), handle the case of generated ids
+        return object instanceof Edge && (id != null ? ElementHelper.areEqual(this, object) : super.equals(object));
     }
 
     /**
@@ -397,7 +399,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
      */
     @Override
     public int hashCode() {
-        return ElementHelper.hashCode(this);
+        // ElementHelper.hashCode() is implemented on this.id(), handle the case of generated ids
+        return id != null ? ElementHelper.hashCode(this) : super.hashCode();
     }
 
     /**
