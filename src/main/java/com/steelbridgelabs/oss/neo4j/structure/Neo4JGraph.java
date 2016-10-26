@@ -100,6 +100,7 @@ public class Neo4JGraph implements Graph {
         }
     }
 
+    private final Neo4JGraphFeatures features = new Neo4JGraphFeatures();
     private final Neo4JReadPartition partition;
     private final Set<String> vertexLabels;
     private final Driver driver;
@@ -450,6 +451,6 @@ public class Neo4JGraph implements Graph {
      */
     @Override
     public Features features() {
-        return new Neo4JGraphFeatures();
+        return features;
     }
 }

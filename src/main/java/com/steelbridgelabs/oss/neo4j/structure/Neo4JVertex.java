@@ -724,6 +724,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // check key values
         if (keyValues.length != 0)
             throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        // validate bolt support
+        Neo4JBoltSupport.checkPropertyValue(value);
         // check cardinality
         VertexProperty.Cardinality existingCardinality = cardinalities.get(name);
         if (existingCardinality != null && existingCardinality != cardinality)
@@ -965,21 +967,21 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
             StringBuilder builder = new StringBuilder();
             // parameters
             Map<String, Object> parameters = new HashMap<>();
-            // merge statement
-            builder.append("MERGE ").append(matchPattern("v")).append(" WHERE ").append(matchPredicate("v", "id"));
+            // match statement
+            builder.append("MATCH ").append(matchPattern("v")).append(" WHERE ").append(matchPredicate("v", "id"));
             // id parameter
             parameters.put("id", id());
             // check vertex is dirty
             if (dirty) {
                 // set properties
-                builder.append(" ON MATCH SET v = {vp}");
+                builder.append(" SET v = {vp}");
                 // update parameters
                 parameters.put("vp", statementParameters());
             }
             // check labels were added
             if (!labelsAdded.isEmpty()) {
                 // add labels
-                builder.append(!dirty ? " ON MATCH SET v" : ", v").append(processLabels(labelsAdded, false));
+                builder.append(!dirty ? " SET v" : ", v").append(processLabels(labelsAdded, false));
             }
             // check labels were removed
             if (!labelsRemoved.isEmpty()) {

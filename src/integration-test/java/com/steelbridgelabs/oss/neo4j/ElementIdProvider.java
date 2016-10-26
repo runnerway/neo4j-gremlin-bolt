@@ -56,13 +56,15 @@ public class ElementIdProvider implements Neo4JElementIdProvider<Long> {
         // check for string
         if (id instanceof String)
             return Long.valueOf((String)id);
-        // error, TODO get message from resource file
+        // error
         throw new IllegalArgumentException(String.format("Expected an id that is convertible to Long but received %s", id.getClass()));
     }
 
     @Override
     public Long get(Entity entity) {
-        return null;
+        Objects.requireNonNull(entity, "entity cannot be null");
+        // return property value
+        return entity.get(IdFieldName).asLong();
     }
 
     @Override

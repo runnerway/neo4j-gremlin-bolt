@@ -232,6 +232,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     @Override
     public <V> Property<V> property(String name, V value) {
         ElementHelper.validateProperty(name, value);
+        // validate bolt support
+        Neo4JBoltSupport.checkPropertyValue(value);
         // transaction should be ready for io operations
         graph.tx().readWrite();
         // property value for key
