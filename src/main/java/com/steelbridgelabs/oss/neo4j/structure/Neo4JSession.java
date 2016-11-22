@@ -751,7 +751,7 @@ class Neo4JSession implements AutoCloseable {
         // update edges
         for (Neo4JEdge edge : edgeUpdateQueue) {
             // create command
-            Neo4JDatabaseCommand command = edge.insertCommand();
+            Neo4JDatabaseCommand command = edge.updateCommand();
             if (command != null) {
                 // statement
                 Statement statement = command.getStatement();
