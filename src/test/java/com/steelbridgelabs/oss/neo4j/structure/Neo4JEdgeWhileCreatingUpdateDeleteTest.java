@@ -135,7 +135,7 @@ public class Neo4JEdgeWhileCreatingUpdateDeleteTest {
         // assert
         Assert.assertNotNull("Failed to create insert command", command);
         Assert.assertNotNull("Failed to create insert command statement", command.getStatement());
-        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "MATCH (o) WHERE ID(o) = {oid} MATCH (i) WHERE ID(i) = {iid} MERGE (o)-[r:`label`]->(i) WHERE ID(r) = {id} ON MATCH SET r = {rp}");
+        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "MATCH (o) WHERE ID(o) = {oid} MATCH (i) WHERE ID(i) = {iid} MATCH (o)-[r:`label`]->(i) WHERE ID(r) = {id} SET r = {rp}");
         Assert.assertEquals("Invalid insert command statement", command.getStatement().parameters(), Values.parameters("oid", 1L, "iid", 2L, "id", 3L, "rp", Collections.singletonMap("key1", "value1")));
         Assert.assertNotNull("Failed to create insert command callback", command.getCallback());
         // invoke callback
