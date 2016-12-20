@@ -182,3 +182,5 @@ Create a new [Vertex](http://tinkerpop.apache.org/javadocs/current/core/org/apac
   // create another vertex in current graph with label
   Vertex vertex2 = graph.addVertex(T.label, "Company");
 ```
+
+## Working with Vertices and Edges

@@ -59,7 +59,7 @@
         <!-- neo4j -->
         <neo4j.version>1.1.0</neo4j.version>
         <!-- gremlin -->
-        <gremlin.version>3.2.3</gremlin.version>
+        <gremlin.version>3.1.6-SNAPSHOT</gremlin.version>
         <!-- slf4j -->
         <slf4j.version>1.7.21</slf4j.version>
         <!-- logback-classic -->
@@ -69,6 +69,19 @@
         <!-- mockito -->
         <mockito-all.version>1.10.19</mockito-all.version>
     </properties>
+    <repositories>
+        <repository>
+            <id>apache.snapshots</id>
+            <name>Apache Development Snapshot Repository</name>
+            <url>https://repository.apache.org/content/repositories/snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
     <dependencies>
         <!-- gremlin -->
         <dependency>
@@ -207,12 +220,14 @@
                 <configuration>
                     <excludes>
                         <exclude>.travis.yml</exclude>
+                        <exclude>.gitmodules</exclude>
                         <exclude>**/target/**</exclude>
                         <exclude>DEPENDENCIES</exclude>
                         <exclude>README.md</exclude>
                         <exclude>CHANGELOG.md</exclude>
                         <exclude>src/main/resources/META-INF/services/org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin</exclude>
                         <exclude>.travis/**</exclude>
+                        <exclude>neokit/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>
