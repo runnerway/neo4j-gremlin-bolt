@@ -57,7 +57,7 @@ public class Neo4JTestGraphProvider extends AbstractGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData graphData) {
         // build configuration
-        Configuration configuration = Neo4JGraphConfigurationBuilder.connect("localhost", "neo4j", "123")
+        Configuration configuration = Neo4JGraphConfigurationBuilder.connect("localhost", "neo4j", "neo4j123")
             .withName(graphName)
             .withElementIdProvider(ElementIdProvider.class)
             .build();
