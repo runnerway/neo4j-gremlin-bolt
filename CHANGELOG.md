@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.16
+
+* Updated [BOLT driver](https://github.com/neo4j/neo4j-java-driver) to version 1.1.0
+
 ## 0.2.15
 
 * Fixed bug updating edge, incorrect MERGE statement
