@@ -14,9 +14,9 @@ cache:
     directories:
         - ~/.m2/repository
 after_success:
-    - python neokit/neorun.py --start=neo4j -p neo4j123
+    - python neokit/neorun.py --start=neokit/neo4j -p neo4j123
     - mvn clean test jacoco:report coveralls:report
     - .travis/before-deploy.sh
     - .travis/deploy.sh
 after_script:
-    - python neokit/neorun.py --stop=neo4j
+    - python neokit/neorun.py --stop=neokit/neo4j
