@@ -1,5 +1,22 @@
 # Change log
 
+## 0.2.16
+
+* Updated [BOLT driver](https://github.com/neo4j/neo4j-java-driver) to version 1.1.0
+
+## 0.2.15
+
+* Fixed bug updating edge, incorrect MERGE statement
+
+## 0.2.14
+
+* Updated [BOLT driver](https://github.com/neo4j/neo4j-java-driver) to version 1.0.6
+* Fixed bug updating edge
+
+## 0.2.13
+
+* Fixed bug related to invalid CYPHER statement when using the Neo4JNativeElementIdProvider 
+
 ## 0.2.12
 
 * Fixed some bugs related to Apache Tinkerpop Test suite execution (StructureStandardSuite) 

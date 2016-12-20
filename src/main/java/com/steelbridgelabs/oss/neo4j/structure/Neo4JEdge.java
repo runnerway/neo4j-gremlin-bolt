@@ -348,7 +348,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // check edge is dirty
         if (dirty) {
             // update statement
-            String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " MERGE (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} ON MATCH SET r = {rp}";
+            String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " MATCH (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} SET r = {rp}";
             // parameters
             Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id(), "rp", statementParameters());
             // reset flags
