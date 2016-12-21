@@ -19,6 +19,7 @@
 package com.steelbridgelabs.oss.neo4j.structure;
 
 import com.steelbridgelabs.oss.neo4j.structure.partitions.AnyLabelReadPartition;
+import com.steelbridgelabs.oss.neo4j.structure.partitions.NoReadPartition;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.neo4j.driver.v1.AuthTokens;
@@ -32,11 +33,11 @@ import org.neo4j.driver.v1.GraphDatabase;
 public class Neo4JGraphFactory {
 
     public static Graph open(Configuration configuration) {
-        if (null == configuration)
+        if (configuration == null)
             throw Graph.Exceptions.argumentCanNotBeNull("configuration");
         try {
-            Config config = Config.build()
-                .toConfig();
+            // neo4j driver configuration
+            Config config = Config.build().toConfig();
             // graph name
             String graphName = configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JGraphNameConfigurationKey);
             // create driver instance
@@ -46,9 +47,9 @@ public class Neo4JGraphFactory {
             Neo4JElementIdProvider<?> edgeIdProvider = loadProvider(configuration.getString(Neo4JGraphConfigurationBuilder.Neo4JEdgeIdProviderClassNameConfigurationKey));
             // check a read partition is required
             if (graphName != null)
-                return new Neo4JGraph(new AnyLabelReadPartition(graphName), new String[]{graphName}, driver, vertexIdProvider, edgeIdProvider);
+                return new Neo4JGraph(new AnyLabelReadPartition(graphName), new String[]{graphName}, driver, vertexIdProvider, edgeIdProvider, configuration);
             // no partition
-            return new Neo4JGraph(driver, vertexIdProvider, edgeIdProvider);
+            return new Neo4JGraph(new NoReadPartition(), new String[]{}, driver, vertexIdProvider, edgeIdProvider, configuration);
         }
         catch (Throwable ex) {
             // throw runtime exception

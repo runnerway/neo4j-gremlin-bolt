@@ -108,6 +108,7 @@ public class Neo4JGraph implements Graph {
     private final Neo4JElementIdProvider<?> edgeIdProvider;
     private final ThreadLocal<Neo4JSession> session = ThreadLocal.withInitial(() -> null);
     private final Neo4JTransaction transaction = new Neo4JTransaction();
+    private final Configuration configuration;
 
     /**
      * Creates a {@link Neo4JGraph} instance.
@@ -128,6 +129,8 @@ public class Neo4JGraph implements Graph {
         // store providers
         this.vertexIdProvider = vertexIdProvider;
         this.edgeIdProvider = edgeIdProvider;
+        // graph factory configuration (required for tinkerpop test suite)
+        this.configuration = null;
     }
 
     /**
@@ -155,6 +158,39 @@ public class Neo4JGraph implements Graph {
         // store providers
         this.vertexIdProvider = vertexIdProvider;
         this.edgeIdProvider = edgeIdProvider;
+        // graph factory configuration (required for tinkerpop test suite)
+        this.configuration = null;
+    }
+
+    /**
+     * Creates a {@link Neo4JGraph} instance with the given partition within the neo4j database.
+     *
+     * @param partition        The {@link Neo4JReadPartition} within the neo4j database.
+     * @param vertexLabels     The set of labels to append to vertices created by the {@link Neo4JGraph} session.
+     * @param driver           The {@link Driver} instance with the database connection information.
+     * @param vertexIdProvider The {@link Neo4JElementIdProvider} for the {@link Vertex} id generation.
+     * @param edgeIdProvider   The {@link Neo4JElementIdProvider} for the {@link Edge} id generation.
+     * @param configuration    The {@link Configuration} used to create the {@link Graph} instance.
+     */
+    Neo4JGraph(Neo4JReadPartition partition, String[] vertexLabels, Driver driver, Neo4JElementIdProvider<?> vertexIdProvider, Neo4JElementIdProvider<?> edgeIdProvider, Configuration configuration) {
+        Objects.requireNonNull(partition, "partition cannot be null");
+        Objects.requireNonNull(vertexLabels, "vertexLabels cannot be null");
+        Objects.requireNonNull(driver, "driver cannot be null");
+        Objects.requireNonNull(vertexIdProvider, "vertexIdProvider cannot be null");
+        Objects.requireNonNull(edgeIdProvider, "edgeIdProvider cannot be null");
+        Objects.requireNonNull(configuration, "configuration cannot be null");
+        // initialize fields
+        this.partition = partition;
+        this.vertexLabels = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(vertexLabels)));
+        this.driver = driver;
+        // validate partition & additional labels
+        if (!partition.containsVertex(this.vertexLabels))
+            throw new IllegalArgumentException("Invalid vertexLabels, vertices created by the graph will not be part of the given partition");
+        // store providers
+        this.vertexIdProvider = vertexIdProvider;
+        this.edgeIdProvider = edgeIdProvider;
+        // graph factory configuration (required for tinkerpop test suite)
+        this.configuration = configuration;
     }
 
     Neo4JSession currentSession() {
@@ -420,7 +456,7 @@ public class Neo4JGraph implements Graph {
      */
     @Override
     public Configuration configuration() {
-        return null;
+        return configuration;
     }
 
     /**
