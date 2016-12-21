@@ -191,7 +191,7 @@ To compile the code and run all the unit tests:
 mvn clean install
 ````
 
-To run the Tinkerpop integration test you need a running instance of the neo4j
+To run the Tinkerpop integration tests you need a running instance of the neo4j
 server. The easiest way to get one up and running is by using the official neo4j
 docker image:
 
@@ -199,7 +199,7 @@ docker image:
 docker run -d --name neo4j -p 7687:7687 -e NEO4J_AUTH=neo4j/neo4j123 neo4j:3.1-enterprise
 ````
 
-And then execute the integration tests by executing the following command:
+And then execute the integration tests by running the following command:
 
 ````
 mvn test -Pintegration-test
