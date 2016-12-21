@@ -2,10 +2,13 @@ language:
     java
 jdk:
     - oraclejdk8
-addons:
-    apt:
-        packages:
-            - python
+sudo:
+    required
+services:
+    - docker
+before_install:
+    - docker run -d --name neo4j -p 7687:7687 -e NEO4J_AUTH=neo4j/neo4j123 neo4j:3.1-enterprise
+    - docker ps -a
 install:
     mvn install -P !build-extras -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 script:
@@ -14,9 +17,8 @@ cache:
     directories:
         - ~/.m2/repository
 after_success:
-    - python neokit/neorun.py --start=neokit/neo4j -p neo4j123
     - mvn clean test jacoco:report coveralls:report
     - .travis/before-deploy.sh
     - .travis/deploy.sh
 after_script:
-    - python neokit/neorun.py --stop=neokit/neo4j
+    - docker rm -f neo4j
