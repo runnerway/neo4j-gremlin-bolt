@@ -18,6 +18,7 @@ cache:
         - ~/.m2/repository
 after_success:
     - mvn clean test jacoco:report coveralls:report
+    - mvn clean test -Pintegration-test
     - .travis/before-deploy.sh
     - .travis/deploy.sh
 after_script:
