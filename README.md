@@ -7,6 +7,7 @@ This project allows the use of the [Apache Tinkerpop](http://tinkerpop.apache.or
 [![Build Status](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt.svg?branch=master)](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt)
 [![Coverage Status](https://coveralls.io/repos/github/SteelBridgeLabs/neo4j-gremlin-bolt/badge.svg?branch=master)](https://coveralls.io/github/SteelBridgeLabs/neo4j-gremlin-bolt?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/)
+[![Contributors](https://img.shields.io/github/contributors/neo4j-contrib/neo4j-apoc-procedures.svg)](https://img.shields.io/github/contributors/neo4j-contrib/neo4j-apoc-procedures.svg)
 
 ## Requirements
 
