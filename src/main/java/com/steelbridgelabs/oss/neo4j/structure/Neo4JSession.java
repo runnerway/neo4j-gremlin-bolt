@@ -299,6 +299,21 @@ class Neo4JSession implements AutoCloseable {
                 if (!filter.isEmpty()) {
                     // vertex match predicate
                     String predicate = partition.vertexMatchPredicate("n");
+                    // change operator on single id filtering (performance optimization)
+                    if (filter.size() == 1) {
+                        // cypher statement
+                        Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE " + vertexIdProvider.matchPredicateOperand("n") + " = {id}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("id", filter.get(0)));
+                        // execute statement
+                        StatementResult result = executeStatement(statement);
+                        // create stream from query
+                        Stream<Vertex> query = vertices(result);
+                        // combine stream from memory and query result
+                        Iterator<Vertex> iterator = combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), query);
+                        // process summary (query has been already consumed by combine)
+                        ResultSummaryLogger.log(result.consume());
+                        // return iterator
+                        return iterator;
+                    }
                     // cypher statement
                     Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + " WHERE " + vertexIdProvider.matchPredicateOperand("n") + " IN {ids}" + (predicate != null ? " AND " + predicate : "") + " RETURN n", Values.parameters("ids", filter));
                     // execute statement
@@ -372,6 +387,21 @@ class Neo4JSession implements AutoCloseable {
                 List<Object> filter = identifiers.stream().filter(id -> !edges.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
+                    // change operator on single id filtering (performance optimization)
+                    if (filter.size() == 1) {
+                        // cypher statement
+                        Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id}" + (partition.usesMatchPredicate() ? " AND " + partition.vertexMatchPredicate("n") + " AND " + partition.vertexMatchPredicate("m") : "") + " RETURN n, r, m", Values.parameters("id", filter.get(0)));
+                        // execute statement
+                        StatementResult result = executeStatement(statement);
+                        // find edges
+                        Stream<Edge> query = edges(result);
+                        // combine stream from memory and query result
+                        Iterator<Edge> iterator = combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), query);
+                        // process summary (query has been already consumed by combine)
+                        ResultSummaryLogger.log(result.consume());
+                        // return iterator
+                        return iterator;
+                    }
                     // cypher statement
                     Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " in {ids}" + (partition.usesMatchPredicate() ? " AND " + partition.vertexMatchPredicate("n") + " AND " + partition.vertexMatchPredicate("m") : "") + " RETURN n, r, m", Values.parameters("ids", filter));
                     // execute statement
