@@ -7,6 +7,7 @@ This project allows the use of the [Apache Tinkerpop](http://tinkerpop.apache.or
 [![Build Status](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt.svg?branch=master)](https://travis-ci.org/SteelBridgeLabs/neo4j-gremlin-bolt)
 [![Coverage Status](https://coveralls.io/repos/github/SteelBridgeLabs/neo4j-gremlin-bolt/badge.svg?branch=master)](https://coveralls.io/github/SteelBridgeLabs/neo4j-gremlin-bolt?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/com.steelbridgelabs.oss/neo4j-gremlin-bolt/)
+[![Contributors](https://img.shields.io/github/contributors/SteelBridgeLabs/neo4j-gremlin-bolt.svg)](https://img.shields.io/github/contributors/SteelBridgeLabs/neo4j-gremlin-bolt.svg)
 
 ## Requirements
 
@@ -182,3 +183,25 @@ Create a new [Vertex](http://tinkerpop.apache.org/javadocs/current/core/org/apac
   // create another vertex in current graph with label
   Vertex vertex2 = graph.addVertex(T.label, "Company");
 ```
+
+## Building the library
+
+To compile the code and run all the unit tests:
+
+````
+mvn clean install
+````
+
+To run the Tinkerpop integration tests you need a running instance of the neo4j
+server. The easiest way to get one up and running is by using the official neo4j
+docker image:
+
+````
+docker run -d --name neo4j -p 7687:7687 -e NEO4J_AUTH=neo4j/neo4j123 neo4j:3.1-enterprise
+````
+
+And then execute the integration tests by running the following command:
+
+````
+mvn test -Pintegration-test
+````
