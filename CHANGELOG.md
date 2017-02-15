@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.18
+
+* Updated [Apache Tinkerpop](http://tinkerpop.apache.org/) to version 3.2.4
+
 ## 0.2.17
 
 * Performance optimization while getting a single element by id
