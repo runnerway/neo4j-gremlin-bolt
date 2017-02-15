@@ -706,9 +706,6 @@ class Neo4JSession implements AutoCloseable {
             Neo4JDatabaseCommand command = vertex.insertCommand();
             // statement
             Statement statement = command.getStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
             // process result
@@ -726,9 +723,6 @@ class Neo4JSession implements AutoCloseable {
             if (command != null) {
                 // statement
                 Statement statement = command.getStatement();
-                // log information
-                if (logger.isDebugEnabled())
-                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
                 // execute statement
                 StatementResult result = executeStatement(statement);
                 // process result
@@ -746,9 +740,6 @@ class Neo4JSession implements AutoCloseable {
             Neo4JDatabaseCommand command = vertex.deleteCommand();
             // statement
             Statement statement = command.getStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
             // process result
@@ -765,9 +756,6 @@ class Neo4JSession implements AutoCloseable {
             Neo4JDatabaseCommand command = edge.insertCommand();
             // statement
             Statement statement = command.getStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
             // process result
@@ -785,9 +773,6 @@ class Neo4JSession implements AutoCloseable {
             if (command != null) {
                 // statement
                 Statement statement = command.getStatement();
-                // log information
-                if (logger.isDebugEnabled())
-                    logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
                 // execute statement
                 StatementResult result = executeStatement(statement);
                 // process result
@@ -805,9 +790,6 @@ class Neo4JSession implements AutoCloseable {
             Neo4JDatabaseCommand command = edge.deleteCommand();
             // statement
             Statement statement = command.getStatement();
-            // log information
-            if (logger.isDebugEnabled())
-                logger.debug("Executing Cypher statement on transaction [{}]: {}", transaction.hashCode(), statement.toString());
             // execute statement
             StatementResult result = executeStatement(statement);
             // process result
