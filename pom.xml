@@ -57,7 +57,7 @@
     </scm>
     <properties>
         <!-- neo4j -->
-        <neo4j.version>1.1.0</neo4j.version>
+        <neo4j.version>1.1.2</neo4j.version>
         <!-- gremlin -->
         <gremlin.version>3.2.4</gremlin.version>
         <!-- slf4j -->
