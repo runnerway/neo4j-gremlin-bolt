@@ -88,6 +88,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         public void remove() {
             // remove from edge
             edge.properties.remove(name);
+            // mark edge as dirty
+            edge.dirty = true;
         }
 
         @Override

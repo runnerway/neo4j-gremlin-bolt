@@ -133,6 +133,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                             vertex.properties.remove(name);
                             // remove cardinality
                             vertex.cardinalities.remove(name);
+                            // mark vertex as dirty
+                            vertex.dirty = true;
                         }
                     }
                 }
@@ -141,6 +143,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     vertex.properties.remove(name);
                     // remove cardinality
                     vertex.cardinalities.remove(name);
+                    // mark vertex as dirty
+                    vertex.dirty = true;
                 }
             }
         }
