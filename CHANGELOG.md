@@ -1,8 +1,9 @@
 # Change log
 
-## 0.2.19 - NOT RELEASED
+## 0.2.19
 
 * Updated [BOLT driver](https://github.com/neo4j/neo4j-java-driver) to version 1.1.2
+* Fixed bug setting element property to null
 
 ## 0.2.18
 
