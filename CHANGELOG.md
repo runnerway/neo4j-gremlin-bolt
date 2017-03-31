@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.20
+
+* Fixed 0.2.19 release, version was not updated
+
 ## 0.2.19
 
 * Updated [BOLT driver](https://github.com/neo4j/neo4j-java-driver) to version 1.1.2
