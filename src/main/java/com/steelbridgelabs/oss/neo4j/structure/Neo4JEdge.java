@@ -94,6 +94,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
             edge.removedProperties.add(name);
             // mark edge as dirty
             edge.dirty = true;
+            // notify session
+            edge.session.dirtyEdge(edge);
         }
 
         @Override
