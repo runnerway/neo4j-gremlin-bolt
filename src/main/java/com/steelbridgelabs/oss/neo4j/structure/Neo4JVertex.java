@@ -137,6 +137,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                             vertex.removedProperties.add(name);
                             // mark vertex as dirty
                             vertex.dirty = true;
+                            // notify session
+                            vertex.session.dirtyVertex(vertex);
                         }
                     }
                 }
@@ -149,6 +151,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     vertex.removedProperties.add(name);
                     // mark vertex as dirty
                     vertex.dirty = true;
+                    // notify session
+                    vertex.session.dirtyVertex(vertex);
                 }
             }
         }

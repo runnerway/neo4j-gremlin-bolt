@@ -1,6 +1,6 @@
 # Change log
 
-## 0.2.21
+## 0.2.22
 
 * Fixed bug in Update statement when removing Edge/Vertex property value
 
