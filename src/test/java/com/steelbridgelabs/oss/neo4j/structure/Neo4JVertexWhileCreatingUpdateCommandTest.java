@@ -210,4 +210,34 @@ public class Neo4JVertexWhileCreatingUpdateCommandTest {
         // invoke callback
         command.getCallback().accept(statementResult);
     }
+
+    @Test
+    public void givenRemovePropertyShouldCreateUpdateCommand() {
+        // arrange
+        Mockito.when(vertexFeatures.getCardinality(Mockito.anyString())).thenAnswer(invocation -> VertexProperty.Cardinality.single);
+        Mockito.when(features.vertex()).thenAnswer(invocation -> vertexFeatures);
+        Mockito.when(partition.validateLabel(Mockito.anyString())).thenAnswer(invocation -> true);
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(graph.features()).thenAnswer(invocation -> features);
+        Mockito.when(node.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(node.labels()).thenAnswer(invocation -> Collections.singletonList("l1"));
+        Mockito.when(node.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
+        Mockito.when(node.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(vertexIdProvider.get(Mockito.any())).thenAnswer(invocation -> 1L);
+        Mockito.when(vertexIdProvider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(vertexIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "n.id");
+        Neo4JVertex vertex = new Neo4JVertex(graph, session, vertexIdProvider, edgeIdProvider, node);
+        vertex.property("key1").remove();
+        // act
+        Neo4JDatabaseCommand command = vertex.updateCommand();
+        // assert
+        Assert.assertNotNull("Failed to create update command", command);
+        Assert.assertNotNull("Failed to create update command statement", command.getStatement());
+        Assert.assertEquals("Invalid update command statement", command.getStatement().text(), "MATCH (v:`l1`) WHERE n.id = {id} SET v = {vp}");
+        Assert.assertEquals("Invalid update command statement", command.getStatement().parameters(), Values.parameters("id", 1L, "vp", Values.parameters("key1", null, "id", 1L)));
+        Assert.assertNotNull("Failed to create update command callback", command.getCallback());
+        // invoke callback
+        command.getCallback().accept(statementResult);
+    }
 }

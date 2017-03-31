@@ -143,4 +143,43 @@ public class Neo4JEdgeWhileCreatingUpdateDeleteTest {
         // assert
         Assert.assertNotNull("Failed get node identifier", edge.id());
     }
+
+    @Test
+    public void givenRemovedPropertyShouldCreateUpdateCommand() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(outVertex.matchPattern(Mockito.any())).thenAnswer(invocation -> "(o)");
+        Mockito.when(outVertex.matchPredicate(Mockito.any(), Mockito.any())).thenAnswer(invocation -> "ID(o) = {oid}");
+        Mockito.when(outVertex.id()).thenAnswer(invocation -> 1L);
+        Mockito.when(outVertex.matchStatement(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> "MATCH (o) WHERE ID(o) = {oid}");
+        Mockito.when(inVertex.matchPattern(Mockito.any())).thenAnswer(invocation -> "(i)");
+        Mockito.when(inVertex.matchPredicate(Mockito.any(), Mockito.any())).thenAnswer(invocation -> "ID(i) = {iid}");
+        Mockito.when(inVertex.id()).thenAnswer(invocation -> 2L);
+        Mockito.when(inVertex.matchStatement(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> "MATCH (i) WHERE ID(i) = {iid}");
+        Mockito.when(relationship.get(Mockito.eq("id"))).thenAnswer(invocation -> Values.value(1L));
+        Mockito.when(relationship.type()).thenAnswer(invocation -> "label");
+        Mockito.when(relationship.keys()).thenAnswer(invocation -> Collections.singleton("key1"));
+        Mockito.when(relationship.get(Mockito.eq("key1"))).thenAnswer(invocation -> Values.value("value1"));
+        Mockito.when(edgeIdProvider.get(Mockito.any())).thenAnswer(invocation -> 3L);
+        Mockito.when(edgeIdProvider.fieldName()).thenAnswer(invocation -> null);
+        Mockito.when(edgeIdProvider.matchPredicateOperand(Mockito.anyString())).thenAnswer(invocation -> "ID(r)");
+        Mockito.when(statementResult.hasNext()).thenAnswer(invocation -> true);
+        Mockito.when(statementResult.next()).thenAnswer(invocation -> record);
+        Mockito.when(record.get(Mockito.eq(0))).thenAnswer(invocation -> value);
+        Mockito.when(value.asEntity()).thenAnswer(invocation -> entity);
+        Neo4JEdge edge = new Neo4JEdge(graph, session, edgeIdProvider, outVertex, relationship, inVertex);
+        edge.property("key1").remove();
+        // act
+        Neo4JDatabaseCommand command = edge.updateCommand();
+        // assert
+        Assert.assertNotNull("Failed to create insert command", command);
+        Assert.assertNotNull("Failed to create insert command statement", command.getStatement());
+        Assert.assertEquals("Invalid insert command statement", command.getStatement().text(), "MATCH (o) WHERE ID(o) = {oid} MATCH (i) WHERE ID(i) = {iid} MATCH (o)-[r:`label`]->(i) WHERE ID(r) = {id} SET r = {rp}");
+        Assert.assertEquals("Invalid insert command statement", command.getStatement().parameters(), Values.parameters("oid", 1L, "iid", 2L, "id", 3L, "rp", Collections.singletonMap("key1", null)));
+        Assert.assertNotNull("Failed to create insert command callback", command.getCallback());
+        // invoke callback
+        command.getCallback().accept(statementResult);
+        // assert
+        Assert.assertNotNull("Failed get node identifier", edge.id());
+    }
 }
