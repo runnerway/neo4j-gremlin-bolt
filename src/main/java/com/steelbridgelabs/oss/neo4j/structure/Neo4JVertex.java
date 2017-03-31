@@ -133,6 +133,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                             vertex.properties.remove(name);
                             // remove cardinality
                             vertex.cardinalities.remove(name);
+                            // mark property as removed
+                            vertex.removedProperties.add(name);
                             // mark vertex as dirty
                             vertex.dirty = true;
                         }
@@ -143,6 +145,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
                     vertex.properties.remove(name);
                     // remove cardinality
                     vertex.cardinalities.remove(name);
+                    // mark property as removed
+                    vertex.removedProperties.add(name);
                     // mark vertex as dirty
                     vertex.dirty = true;
                 }
@@ -193,6 +197,7 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
     private SortedSet<String> matchLabels;
     private SortedSet<String> originalLabels;
     private Set<String> graphLabels;
+    private Set<String> removedProperties = new HashSet<>();
     private Map<String, Collection<VertexProperty>> originalProperties;
     private Map<String, VertexProperty.Cardinality> originalCardinalities;
 
@@ -924,6 +929,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         );
         // process properties
         Map<String, Object> parameters = properties.entrySet().stream().collect(collector);
+        // removed properties
+        removedProperties.forEach(name -> parameters.put(name, null));
         // append id field if required
         String idFieldName = vertexIdProvider.fieldName();
         if (id != null && idFieldName != null)
@@ -1017,6 +1024,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         // update property values
         originalProperties = new HashMap<>(properties);
         originalCardinalities = new HashMap<>(cardinalities);
+        // reset removed properties
+        removedProperties.clear();
         // reset flags
         dirty = false;
     }
@@ -1033,6 +1042,8 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         cardinalities.clear();
         properties.putAll(originalProperties);
         cardinalities.putAll(originalCardinalities);
+        // reset removed properties
+        removedProperties.clear();
         // reset flags
         outEdgesLoaded = false;
         inEdgesLoaded = false;

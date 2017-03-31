@@ -35,10 +35,12 @@ import org.neo4j.driver.v1.types.Relationship;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -88,6 +90,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         public void remove() {
             // remove from edge
             edge.properties.remove(name);
+            // mark property as removed
+            edge.removedProperties.add(name);
             // mark edge as dirty
             edge.dirty = true;
         }
@@ -120,6 +124,7 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private Object generatedId = null;
     private boolean dirty = false;
     private boolean newEdge;
+    private Set<String> removedProperties = new HashSet<>();
     private Map<String, Neo4JEdgeProperty> originalProperties;
 
     Neo4JEdge(Neo4JGraph graph, Neo4JSession session, Neo4JElementIdProvider<?> edgeIdProvider, String label, Neo4JVertex out, Neo4JVertex in) {
@@ -312,6 +317,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     private Map<String, Object> statementParameters() {
         // process properties
         Map<String, Object> parameters = properties.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value()));
+        // removed properties
+        removedProperties.forEach(name -> parameters.put(name, null));
         // append id field if required
         String idFieldName = edgeIdProvider.fieldName();
         if (id != null && idFieldName != null)
@@ -353,8 +360,6 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
             String statement = out.matchStatement("o", "oid") + " " + in.matchStatement("i", "iid") + " MATCH (o)-[r:`" + label + "`]->(i)" + " WHERE " + edgeIdProvider.matchPredicateOperand("r") + " = {id} SET r = {rp}";
             // parameters
             Value parameters = Values.parameters("oid", out.id(), "iid", in.id(), "id", id(), "rp", statementParameters());
-            // reset flags
-            dirty = false;
             // command statement
             return new Neo4JDatabaseCommand(new Statement(statement, parameters), result -> {
             });
@@ -376,6 +381,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
     void commit() {
         // commit property values
         originalProperties = new HashMap<>(properties);
+        // reset removed properties
+        removedProperties.clear();
         // reset flags
         dirty = false;
         // this is no longer a transient edge
@@ -389,6 +396,8 @@ public class Neo4JEdge extends Neo4JElement implements Edge {
         // restore property values
         properties.clear();
         properties.putAll(originalProperties);
+        // reset removed properties
+        removedProperties.clear();
         // reset flags
         dirty = false;
     }

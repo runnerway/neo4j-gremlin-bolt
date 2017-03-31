@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.21
+
+* Fixed bug in Update statement when removing Edge/Vertex property value
+
 ## 0.2.20
 
 * Fixed 0.2.19 release, version was not updated
