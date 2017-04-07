@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.23
+
+* Fixed bug [Different behavior between Tinkergraph, Neo4j (embedded) and neo4j-gremlin-bolt](https://github.com/SteelBridgeLabs/neo4j-gremlin-bolt/issues/52)
+
 ## 0.2.22
 
 * Fixed bug in Update statement when removing Edge/Vertex property value
