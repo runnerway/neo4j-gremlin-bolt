@@ -26,10 +26,16 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.summary.ResultSummary;
+
+import java.util.Iterator;
 
 /**
  * @author Rogelio J. Baucells
@@ -57,6 +63,15 @@ public class Neo4JSessionWhileAddVertexTest {
 
     @Mock
     private Session session;
+
+    @Mock
+    private org.neo4j.driver.v1.Transaction neo4jTransaction;
+
+    @Mock
+    private StatementResult statementResult;
+
+    @Mock
+    private ResultSummary resultSummary;
 
     @Test
     public void givenEmptyKeyValuePairsShouldCreateVertexWithDefaultLabel() {
@@ -149,6 +164,89 @@ public class Neo4JSessionWhileAddVertexTest {
             Assert.assertEquals("Failed to assign vertex label", vertex.property("k2").value(), 2L);
             Assert.assertNotNull("Failed to assign vertex property", vertex.property("k3"));
             Assert.assertEquals("Failed to assign vertex label", vertex.property("k3").value(), true);
+        }
+    }
+
+    @Test
+    public void givenNewVertexWithIdShouldBeAvailableOnIdQueries() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
+        Mockito.when(provider.processIdentifier(Mockito.any())).thenAnswer(invocation -> 1L);
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
+            // add vertex
+            session.addVertex();
+            // act
+            Iterator<Vertex> vertices = session.vertices(new Object[]{1L});
+            // assert
+            Assert.assertNotNull("Failed to find vertex", vertices.hasNext());
+            Vertex vertex = vertices.next();
+            Assert.assertNotNull("Failed to create vertex", vertex);
+            Assert.assertEquals("Failed to assign vertex label", Vertex.DEFAULT_LABEL, vertex.label());
+        }
+    }
+
+    @Test
+    public void givenNewVertexWithIdShouldBeAvailableOnAllIdsQueries() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(session.beginTransaction()).then(invocation -> neo4jTransaction);
+        Mockito.when(neo4jTransaction.run(Mockito.any(Statement.class))).then(invocation -> statementResult);
+        Mockito.when(statementResult.hasNext()).then(invocation -> false);
+        Mockito.when(statementResult.consume()).then(invocation -> resultSummary);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
+            // transaction
+            try (org.neo4j.driver.v1.Transaction tx = session.beginTransaction()) {
+                // add vertex
+                session.addVertex();
+                // act
+                Iterator<Vertex> vertices = session.vertices(new Object[0]);
+                // assert
+                Assert.assertNotNull("Failed to find vertex", vertices.hasNext());
+                Vertex vertex = vertices.next();
+                Assert.assertNotNull("Failed to create vertex", vertex);
+                Assert.assertEquals("Failed to assign vertex label", Vertex.DEFAULT_LABEL, vertex.label());
+                // commit
+                tx.success();
+            }
+        }
+    }
+
+    @Test
+    public void givenNewVertexWithoutIdShouldBeAvailableOnAllIdsQueries() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(session.beginTransaction()).then(invocation -> neo4jTransaction);
+        Mockito.when(neo4jTransaction.run(Mockito.any(Statement.class))).then(invocation -> statementResult);
+        Mockito.when(statementResult.hasNext()).then(invocation -> false);
+        Mockito.when(statementResult.consume()).then(invocation -> resultSummary);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> null);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
+            // transaction
+            try (org.neo4j.driver.v1.Transaction tx = session.beginTransaction()) {
+                // add vertex
+                session.addVertex();
+                // act
+                Iterator<Vertex> vertices = session.vertices(new Object[0]);
+                // assert
+                Assert.assertNotNull("Failed to find vertex", vertices.hasNext());
+                Vertex vertex = vertices.next();
+                Assert.assertNotNull("Failed to create vertex", vertex);
+                Assert.assertEquals("Failed to assign vertex label", Vertex.DEFAULT_LABEL, vertex.label());
+                // commit
+                tx.success();
+            }
         }
     }
 }

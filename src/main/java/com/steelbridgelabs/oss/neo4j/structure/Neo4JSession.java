@@ -70,6 +70,8 @@ class Neo4JSession implements AutoCloseable {
     private final Set<Object> deletedEdges = new HashSet<>();
     private final Set<Neo4JVertex> transientVertices = new HashSet<>();
     private final Set<Neo4JEdge> transientEdges = new HashSet<>();
+    private final Map<Object, Neo4JVertex> transientVertexIndex = new HashMap<>();
+    private final Map<Object, Neo4JEdge> transientEdgeIndex = new HashMap<>();
     private final Set<Neo4JVertex> vertexUpdateQueue = new HashSet<>();
     private final Set<Neo4JEdge> edgeUpdateQueue = new HashSet<>();
     private final Set<Neo4JVertex> vertexDeleteQueue = new HashSet<>();
@@ -133,6 +135,10 @@ class Neo4JSession implements AutoCloseable {
             vertexUpdateQueue.forEach(Neo4JVertex::commit);
             // commit dirty edges
             edgeUpdateQueue.forEach(Neo4JEdge::commit);
+            // move transient vertices to vertices
+            transientVertices.forEach(vertex -> vertices.put(vertex.id(), vertex));
+            // move transient edges to edges
+            transientEdges.forEach(edge -> edges.put(edge.id(), edge));
             // clean internal structures
             deletedEdges.clear();
             edgeDeleteQueue.clear();
@@ -140,6 +146,8 @@ class Neo4JSession implements AutoCloseable {
             vertexDeleteQueue.clear();
             transientEdges.clear();
             transientVertices.clear();
+            transientVertexIndex.clear();
+            transientEdgeIndex.clear();
             vertexUpdateQueue.clear();
             edgeUpdateQueue.clear();
             // log information
@@ -166,10 +174,6 @@ class Neo4JSession implements AutoCloseable {
             // reset edges loaded flag if needed
             if (!edgeUpdateQueue.isEmpty() || !deletedEdges.isEmpty())
                 edgesLoaded = false;
-            // remove transient vertices from map
-            transientVertices.forEach(vertex -> vertices.remove(vertex.id()));
-            // remove transient edges from map
-            transientEdges.forEach(edge -> edges.remove(edge.id()));
             // rollback dirty vertices
             vertexUpdateQueue.forEach(Neo4JVertex::rollback);
             // rollback dirty edges
@@ -195,6 +199,8 @@ class Neo4JSession implements AutoCloseable {
             vertexDeleteQueue.clear();
             transientEdges.clear();
             transientVertices.clear();
+            transientVertexIndex.clear();
+            transientEdgeIndex.clear();
             vertexUpdateQueue.clear();
             edgeUpdateQueue.clear();
             // log information
@@ -231,8 +237,10 @@ class Neo4JSession implements AutoCloseable {
         transientVertices.add(vertex);
         // attach properties
         ElementHelper.attachProperties(vertex, keyValues);
-        // register element
-        registerVertex(vertex);
+        // check vertex has id
+        Object id = vertex.id();
+        if (id != null)
+            transientVertexIndex.put(id, vertex);
         // return vertex
         return vertex;
     }
@@ -255,11 +263,13 @@ class Neo4JSession implements AutoCloseable {
         transientEdges.add(edge);
         // attach properties
         ElementHelper.attachProperties(edge, keyValues);
-        // register element
-        registerEdge(edge);
         // register transient edge with adjacent vertices
         out.addOutEdge(edge);
         in.addInEdge(edge);
+        // check edge has id
+        Object id = edge.id();
+        if (id != null)
+            transientEdgeIndex.put(id, edge);
         // return edge
         return edge;
     }
@@ -294,7 +304,7 @@ class Neo4JSession implements AutoCloseable {
                 // parameters as a stream
                 Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(vertexIdProvider, id)).collect(Collectors.toSet());
                 // filter ids, remove ids already in memory (only ids that might exist on server)
-                List<Object> filter = identifiers.stream().filter(id -> !vertices.containsKey(id)).collect(Collectors.toList());
+                List<Object> filter = identifiers.stream().filter(id -> !vertices.containsKey(id) && !transientVertexIndex.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
                     // vertex match predicate
@@ -308,7 +318,7 @@ class Neo4JSession implements AutoCloseable {
                         // create stream from query
                         Stream<Vertex> query = vertices(result);
                         // combine stream from memory and query result
-                        Iterator<Vertex> iterator = combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), query);
+                        Iterator<Vertex> iterator = combine(Stream.concat(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), identifiers.stream().filter(transientVertexIndex::containsKey).map(id -> (Vertex)transientVertexIndex.get(id))), query);
                         // process summary (query has been already consumed by combine)
                         ResultSummaryLogger.log(result.consume());
                         // return iterator
@@ -321,14 +331,14 @@ class Neo4JSession implements AutoCloseable {
                     // create stream from query
                     Stream<Vertex> query = vertices(result);
                     // combine stream from memory and query result
-                    Iterator<Vertex> iterator = combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), query);
+                    Iterator<Vertex> iterator = combine(Stream.concat(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), identifiers.stream().filter(transientVertexIndex::containsKey).map(id -> (Vertex)transientVertexIndex.get(id))), query);
                     // process summary (query has been already consumed by combine)
                     ResultSummaryLogger.log(result.consume());
                     // return iterator
                     return iterator;
                 }
                 // no need to execute query, only items in memory
-                return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), Stream.empty());
+                return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), identifiers.stream().filter(transientVertexIndex::containsKey).map(id -> (Vertex)transientVertexIndex.get(id)));
             }
             // vertex match predicate
             String predicate = partition.vertexMatchPredicate("n");
@@ -352,17 +362,10 @@ class Neo4JSession implements AutoCloseable {
             // parameters as a stream (set to remove duplicated ids)
             Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(vertexIdProvider, id)).collect(Collectors.toSet());
             // no need to execute query, only items in memory
-            return identifiers.stream()
-                .filter(vertices::containsKey)
-                .map(id -> (Vertex)vertices.get(id))
-                .collect(Collectors.toCollection(LinkedList::new))
-                .iterator();
+            return combine(identifiers.stream().filter(vertices::containsKey).map(id -> (Vertex)vertices.get(id)), identifiers.stream().filter(transientVertexIndex::containsKey).map(id -> (Vertex)transientVertexIndex.get(id)));
         }
-        // no need to execute query, only items in memory
-        return vertices.values().stream()
-            .map(vertex -> (Vertex)vertex)
-            .collect(Collectors.toCollection(LinkedList::new))
-            .iterator();
+        // no need to execute query, all items in memory
+        return combine(transientVertices.stream().map(vertex -> (Vertex)vertex), vertices.values().stream().map(vertex -> (Vertex)vertex));
     }
 
     Stream<Vertex> vertices(StatementResult result) {
@@ -384,7 +387,7 @@ class Neo4JSession implements AutoCloseable {
                 // parameters as a stream
                 Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(edgeIdProvider, id)).collect(Collectors.toSet());
                 // filter ids, remove ids already in memory (only ids that might exist on server)
-                List<Object> filter = identifiers.stream().filter(id -> !edges.containsKey(id)).collect(Collectors.toList());
+                List<Object> filter = identifiers.stream().filter(id -> !edges.containsKey(id) && !transientEdgeIndex.containsKey(id)).collect(Collectors.toList());
                 // check we need to execute statement in server
                 if (!filter.isEmpty()) {
                     // change operator on single id filtering (performance optimization)
@@ -396,7 +399,7 @@ class Neo4JSession implements AutoCloseable {
                         // find edges
                         Stream<Edge> query = edges(result);
                         // combine stream from memory and query result
-                        Iterator<Edge> iterator = combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), query);
+                        Iterator<Edge> iterator = combine(Stream.concat(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), identifiers.stream().filter(transientEdgeIndex::containsKey).map(id -> (Edge)transientEdgeIndex.get(id))), query);
                         // process summary (query has been already consumed by combine)
                         ResultSummaryLogger.log(result.consume());
                         // return iterator
@@ -409,14 +412,14 @@ class Neo4JSession implements AutoCloseable {
                     // find edges
                     Stream<Edge> query = edges(result);
                     // combine stream from memory and query result
-                    Iterator<Edge> iterator = combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), query);
+                    Iterator<Edge> iterator = combine(Stream.concat(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), identifiers.stream().filter(transientEdgeIndex::containsKey).map(id -> (Edge)transientEdgeIndex.get(id))), query);
                     // process summary (query has been already consumed by combine)
                     ResultSummaryLogger.log(result.consume());
                     // return iterator
                     return iterator;
                 }
                 // no need to execute query, only items in memory
-                return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), Stream.empty());
+                return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), identifiers.stream().filter(transientEdgeIndex::containsKey).map(id -> (Edge)transientEdgeIndex.get(id)));
             }
             // cypher statement for all edges in database
             Statement statement = new Statement("MATCH " + generateVertexMatchPattern("n") + "-[r]->" + generateVertexMatchPattern("m") + (partition.usesMatchPredicate() ? " WHERE " + partition.vertexMatchPredicate("n") + " AND " + partition.vertexMatchPredicate("m") : "") + " RETURN n, r, m");
@@ -438,17 +441,10 @@ class Neo4JSession implements AutoCloseable {
             // parameters as a stream (set to remove duplicated ids)
             Set<Object> identifiers = Arrays.stream(ids).map(id -> processIdentifier(edgeIdProvider, id)).collect(Collectors.toSet());
             // no need to execute query, only items in memory
-            return identifiers.stream()
-                .filter(edges::containsKey)
-                .map(id -> (Edge)edges.get(id))
-                .collect(Collectors.toCollection(LinkedList::new))
-                .iterator();
+            return combine(identifiers.stream().filter(edges::containsKey).map(id -> (Edge)edges.get(id)), identifiers.stream().filter(transientEdgeIndex::containsKey).map(id -> (Edge)transientEdgeIndex.get(id)));
         }
-        // no need to execute query, only items in memory
-        return edges.values().stream()
-            .map(edge -> (Edge)edge)
-            .collect(Collectors.toCollection(LinkedList::new))
-            .iterator();
+        // no need to execute query, all items in memory
+        return combine(transientEdges.stream().map(edge -> (Edge)edge), edges.values().stream().map(edge -> (Edge)edge));
     }
 
     Stream<Edge> edges(StatementResult result) {
@@ -486,6 +482,9 @@ class Neo4JSession implements AutoCloseable {
             }
             // remove it from transient set
             transientEdges.remove(edge);
+            // remove it from index
+            if (id != null)
+                transientEdgeIndex.remove(id);
         }
         else {
             // log information
@@ -643,6 +642,9 @@ class Neo4JSession implements AutoCloseable {
                 logger.debug("Deleting transient vertex: {}", vertex);
             // remove it from transient set
             transientVertices.remove(vertex);
+            // remove it from index
+            if (id != null)
+                transientVertexIndex.remove(id);
         }
         else {
             // log information
@@ -654,9 +656,9 @@ class Neo4JSession implements AutoCloseable {
             vertexDeleteQueue.add(vertex);
             // remove it from update queue (avoid issuing MERGE command for an element that has been deleted)
             vertexUpdateQueue.remove(vertex);
+            // remove vertex from map
+            vertices.remove(id);
         }
-        // remove vertex from map
-        vertices.remove(id);
     }
 
     void dirtyVertex(Neo4JVertex vertex) {
