@@ -18,6 +18,7 @@
 
 package com.steelbridgelabs.oss.neo4j.structure;
 
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,6 +28,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.summary.ResultSummary;
+
+import java.util.Iterator;
 
 /**
  * @author Rogelio J. Baucells
@@ -54,6 +60,15 @@ public class Neo4JSessionWhileAddEdgeTest {
 
     @Mock
     private Transaction transaction;
+
+    @Mock
+    private org.neo4j.driver.v1.Transaction neo4jTransaction;
+
+    @Mock
+    private StatementResult statementResult;
+
+    @Mock
+    private ResultSummary resultSummary;
 
     @Test
     public void givenEmptyKeyValuePairsShouldCreateVEdgeWithLabel() {
@@ -114,6 +129,90 @@ public class Neo4JSessionWhileAddEdgeTest {
             Assert.assertEquals("Failed to assign edge label", edge.property("k2").value(), 2L);
             Assert.assertNotNull("Failed to assign edge property", edge.property("k3"));
             Assert.assertEquals("Failed to assign edge label", edge.property("k3").value(), true);
+        }
+    }
+
+    @Test
+    public void givenNewEdgeWithIdShouldBeAvailableOnIdQueries() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
+            // add edge
+            session.addEdge("label1", outVertex, inVertex);
+            // act
+            Iterator<Edge> edges = session.edges(new Object[]{1L});
+            // assert
+            Assert.assertNotNull("Failed to find edge", edges.hasNext());
+            Edge edge = edges.next();
+            Assert.assertNotNull("Failed to create edge", edge);
+            Assert.assertEquals("Failed to assign edge label", "label1", edge.label());
+        }
+    }
+
+    @Test
+    public void givenNewEdgeWithIdShouldBeAvailableOnAllIdsQueries() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(session.beginTransaction()).then(invocation -> neo4jTransaction);
+        Mockito.when(neo4jTransaction.run(Mockito.any(Statement.class))).then(invocation -> statementResult);
+        Mockito.when(statementResult.hasNext()).then(invocation -> false);
+        Mockito.when(statementResult.consume()).then(invocation -> resultSummary);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> 1L);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
+            // transaction
+            try (org.neo4j.driver.v1.Transaction tx = session.beginTransaction()) {
+                // add edge
+                session.addEdge("label1", outVertex, inVertex);
+                // act
+                Iterator<Edge> edges = session.edges(new Object[0]);
+                // assert
+                Assert.assertNotNull("Failed to create edge", edges.hasNext());
+                Edge edge = edges.next();
+                Assert.assertNotNull("Failed to create edge", edge);
+                Assert.assertEquals("Failed to assign edge label", "label1", edge.label());
+                // commit
+                tx.success();
+            }
+        }
+    }
+
+    @Test
+    public void givenNewEdgeWithoutIdShouldBeAvailableOnAllIdsQueries() {
+        // arrange
+        Mockito.when(graph.tx()).thenAnswer(invocation -> transaction);
+        Mockito.when(graph.getPartition()).thenAnswer(invocation -> partition);
+        Mockito.when(session.beginTransaction()).then(invocation -> neo4jTransaction);
+        Mockito.when(neo4jTransaction.run(Mockito.any(Statement.class))).then(invocation -> statementResult);
+        Mockito.when(statementResult.hasNext()).then(invocation -> false);
+        Mockito.when(statementResult.consume()).then(invocation -> resultSummary);
+        Mockito.when(provider.fieldName()).thenAnswer(invocation -> "id");
+        Mockito.when(provider.generate()).thenAnswer(invocation -> null);
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        Mockito.when(provider.processIdentifier(argument.capture())).thenAnswer(invocation -> argument.getValue());
+        try (Neo4JSession session = new Neo4JSession(graph, this.session, provider, provider)) {
+            // transaction
+            try (org.neo4j.driver.v1.Transaction tx = session.beginTransaction()) {
+                // add edge
+                session.addEdge("label1", outVertex, inVertex);
+                // act
+                Iterator<Edge> edges = session.edges(new Object[0]);
+                // assert
+                Assert.assertNotNull("Failed to create edge", edges.hasNext());
+                Edge edge = edges.next();
+                Assert.assertNotNull("Failed to create edge", edge);
+                Assert.assertEquals("Failed to assign edge label", "label1", edge.label());
+                // commit
+                tx.success();
+            }
         }
     }
 }
