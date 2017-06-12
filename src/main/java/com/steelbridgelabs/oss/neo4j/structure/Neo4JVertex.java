@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -264,15 +265,16 @@ public class Neo4JVertex extends Neo4JElement implements Vertex {
         StreamSupport.stream(node.keys().spliterator(), false).filter(key -> !key.equals(idFieldName)).forEach(key -> {
             // value
             Value value = node.get(key);
+            TypeRepresentation type = (TypeRepresentation) value.type();
             // process value type
-            switch (value.type().name()) {
-                case "LIST":
+            switch (type.constructor()) {
+                case LIST_TyCon:
                     // process values
                     properties.put(key, value.asList().stream().map(item -> new Neo4JVertexProperty<>(this, propertyIdProvider.incrementAndGet(), key, item)).collect(Collectors.toList()));
                     // cardinality
                     cardinalities.put(key, VertexProperty.Cardinality.list);
                     break;
-                case "MAP":
+                case MAP_TyCon:
                     throw new RuntimeException("TODO: implement maps");
                 default:
                     // add property
